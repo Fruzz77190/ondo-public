@@ -128,7 +128,6 @@ input[type=range]{width:100%;accent-color:var(--select);height:28px;margin:0}
     </div>
   </div>
 
-  <div class="nuit" id="nuit"><p id="nuitHint">Touche l'écran pour faire une pause</p></div>
   <div class="toast" id="toast" hidden></div>
 
   <div class="fin" id="fin" hidden>
@@ -190,7 +189,6 @@ input[type=range]{width:100%;accent-color:var(--select);height:28px;margin:0}
       </div>
       <div class="acts2">
         <button class="btn plein" id="btnReprendre">Reprendre</button>
-        <button class="btn second" id="btnAllumer">Rallumer le paysage</button>
         <button class="btn second" id="btnStop">Terminer la séance</button>
       </div>
     </div>
@@ -699,6 +697,10 @@ const T=S.reduce((s,g)=>s+g.d,0);
 const DUREE=3;
 const MOTS=['Inspire','Expire'];
 const GUIDE=['Inspire doucement…','Expire lentement, comme le vent dans la lavande…'];
+// L'invitation à fermer les yeux : au bout d'une minute, pendant deux respirations. L'écran reste allumé (choix de Julien, 15 nov. 2026).
+const INVIT=60,INVIT_FIN=INVIT+2*14;
+const INVIT_TEXTE='Si tu le souhaites, tu peux fermer les yeux et te laisser guider par la musique et le bruit du vent.';
+const INVIT_VOIX='Si tu le souhaites, tu peux fermer les yeux, et te laisser guider par la musique et le bruit du vent.';
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 
@@ -801,8 +803,8 @@ function demarrer(){
   const t0=t+3.2,cycles=Math.ceil(DUREE*60/T),total=cycles*T;
   sess={t0,total,end:t0+total,cycles,repere:cfg.repere,k:0,next:t0,cr:t+1.5,bi:t+4+Math.random()*4,endDone:false,lightAt:null,fin:false,voice:[],lastWord:null,lastPill:-1,son,depart:performance.now(),ctx0:t};
   const V=(tt,txt)=>sess.voice.push({t:tt,txt});
-  V(t0+2*T+5.4,'Tu peux fermer les yeux. Le son te guide.');
-  const m=Math.floor(cycles/2);if(m>=4)V(t0+m*T+6.5,'Tu fais ça très bien. Laisse le son te guider.');
+  V(t0+INVIT+1.2,INVIT_VOIX);
+  const m=Math.floor(cycles*.7);if(m*T>INVIT+40)V(t0+m*T+6.5,'Tu fais ça très bien. Continue à ton rythme.');
   V(sess.end+7.5,"C'est terminé. Prends ton temps pour rouvrir les yeux.");
   if(son){try{G=build();G.wind.gain.setValueAtTime(0,t);G.wind.gain.linearRampToValueAtTime(.06,t0);G.rustle.gain.setValueAtTime(0,t);G.rustle.gain.linearRampToValueAtTime(.006,t0)}catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
@@ -840,7 +842,7 @@ function tick(){
   const stopAmb=sess.end+12;
   while(sess.cr<H&&sess.cr<stopAmb){const v=Math.floor(Math.random()*3);cricket(sess.cr,[4380,4720,5050][v],[-.6,.15,.7][v]);sess.cr+=Math.random()<.08?2.5+Math.random()*4:.35+Math.random()*.6}
   while(sess.bi<H&&sess.bi<stopAmb){bird(sess.bi);sess.bi+=7+Math.random()*12}
-  if(!sess.chime&&sess.t0+2*T+5<H){sess.chime=true;bowl(sess.t0+2*T+5,587.33,{len:4,gain:.22,dest:G.out})}
+  if(!sess.chime&&sess.t0+INVIT<H){sess.chime=true;bowl(sess.t0+INVIT+.2,587.33,{len:4,gain:.2,dest:G.out})}
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     [[880,.2],[739.99,2.6],[587.33,5]].forEach(([f,dt])=>bowl(e+dt,f,{len:7,gain:.38,dest:G.out}));
     G.mus.f.gain.setValueAtTime(1,e);G.mus.f.gain.linearRampToValueAtTime(0,e+7);
@@ -858,14 +860,13 @@ function arreter(){
 
 /* ---------- Pause ---------- */
 function ouvrirPause(){if(!sess||sess.fin)return;$('pause').hidden=false;const el=Math.max(0,now()-sess.t0);
-  $('pauseOu').textContent=mmss(Math.min(el,sess.total))+' sur '+mmss(sess.total);$('btnAllumer').hidden=sess.lightAt!=null||noirA(el)<.05;
+  $('pauseOu').textContent=mmss(Math.min(el,sess.total))+' sur '+mmss(sess.total);
   if('speechSynthesis' in window){try{speechSynthesis.cancel()}catch(e){}}
   if(clock.audio){if(ctx&&ctx.state==='running')ctx.suspend()}else clock.pauseAt=performance.now()/1000}
 function reprendre(){$('pause').hidden=true;if(clock.audio){if(ctx){const r=ctx.resume();if(r&&r.catch)r.catch(()=>{})}}else if(clock.pauseAt!=null){clock.base+=performance.now()/1000-clock.pauseAt;clock.pauseAt=null}}
 $('btnPause').addEventListener('click',e=>{e.stopPropagation();ouvrirPause()});
 $('stage').addEventListener('click',e=>{if(!sess||sess.fin)return;if(e.target.closest('.sheet,.round,.btn'))return;ouvrirPause()});
 $('btnReprendre').addEventListener('click',e=>{e.stopPropagation();reprendre()});
-$('btnAllumer').addEventListener('click',e=>{e.stopPropagation();reprendre();if(sess)sess.lightAt=now()});
 $('btnStop').addEventListener('click',e=>{e.stopPropagation();reprendre();arreter();montrerDepart()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sess&&!sess.fin&&clock.audio&&ctx&&ctx.state!=='running'&&$('pause').hidden)ouvrirPause()});
 
@@ -873,7 +874,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sess&&!se
 $('btnGo').addEventListener('click',e=>{e.stopPropagation();try{demarrer()}catch(err){toast('Erreur au démarrage : '+err.message,10000)}});
 $('btnEncore').addEventListener('click',e=>{e.stopPropagation();arreter();demarrer()});
 $('btnAccueil').addEventListener('click',e=>{e.stopPropagation();arreter();montrerDepart()});
-function montrerDepart(){$('depart').hidden=false;$('fin').hidden=true;$('phaseBox').hidden=true;$('bas').hidden=true;$('nuit').style.opacity=0;$('nuitHint').style.opacity=0;
+function montrerDepart(){$('depart').hidden=false;$('fin').hidden=true;$('phaseBox').hidden=true;$('bas').hidden=true;
   $('btnPause').classList.add('cache');$('btnSon').classList.add('cache');$('creteG').style.transition='none';$('creteG').style.opacity=1;$('pap').setAttribute('opacity',0);dessinerCrete(-1);renderCfg()}
 
 /* ---------- Image ---------- */
@@ -884,11 +885,6 @@ function dessinerCrete(sec){let dp='',df='';
   for(let x=X0-3;x<=366;x+=3)df+=(df?' L':'M')+x+','+yAt(sec+(x-X0)/PXS).toFixed(1);
   $('passe').setAttribute('d',dp);$('avenir').setAttribute('d',df);const y=yAt(sec);$('halo').setAttribute('cy',y);$('point').setAttribute('cy',y)}
 function fondu(el){el.style.transition='none';el.style.opacity=.35;void el.offsetWidth;el.style.transition='opacity .6s ease';el.style.opacity=1}
-function noirA(el){
-  if(!sess)return 0;let o=clamp((el-3*T)/6);
-  if(el>sess.total+6)o*=1-clamp((el-sess.total-6)/5);
-  if(sess.lightAt!=null)o*=1-clamp((now()-sess.lightAt)/1.5);
-  return o}
 const reduit=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function papillon(el){const d0=16,D=16,p=(el-d0)/D,P=$('pap');
   if(reduit||p<0||p>1){P.setAttribute('opacity',0);return}
@@ -912,8 +908,8 @@ function frame(){
       if(s.g.n==='Pause'){word.textContent=MOTS[s.g.pill];word.style.transition='opacity .5s';word.style.opacity=.35;count.style.transition='opacity .5s';count.style.opacity=.35}
       else{word.textContent=MOTS[s.g.pill];fondu(word);fondu(count)}}
     count.textContent=s.g.n==='Pause'?'1':String(s.left);
-    const appel=el>=2*T+5&&el<3*T+6&&sess.lightAt==null;
-    const g2=appel?'Tu peux fermer les yeux, le son te guide.':GUIDE[s.g.pill];if(guide.textContent!==g2)guide.textContent=g2;guide.classList.toggle('appel',appel);
+    const appel=el>=INVIT&&el<INVIT_FIN;
+    const g2=appel?INVIT_TEXTE:GUIDE[s.g.pill];if(guide.textContent!==g2)guide.textContent=g2;guide.classList.toggle('appel',appel);
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1)}
     dessinerCrete(Math.max(0,el-.001));papillon(el);
   }else if(!sess.fin){
@@ -921,8 +917,6 @@ function frame(){
     $('fin').hidden=false;if(sess.wake){try{sess.wake.release()}catch(e){}}
   }
   $('fill').style.width=(clamp(el/sess.total)*100).toFixed(2)+'%';$('time').textContent=mmss(clamp(el/sess.total)*sess.total);
-  const o=noirA(el);$('nuit').style.opacity=o.toFixed(3);
-  const tPlein=3*T+6;const h=o>.98&&el>=tPlein&&el<tPlein+6?.35*(1-(el-tPlein)/6):0;$('nuitHint').style.opacity=h.toFixed(3);
 }
 dessinerCrete(-1);requestAnimationFrame(frame);
 if(location.search.indexOf('debug')>=0)window.__ondo={frame,tick,now,clock,get sess(){return sess},get ctx(){return ctx},get G(){return G}};
