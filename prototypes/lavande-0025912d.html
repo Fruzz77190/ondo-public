@@ -727,12 +727,14 @@ function build(t0){
   g.out=ctx.createGain();g.out.gain.value=1;
   const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.3;
   g.out.connect(g.mute).connect(comp).connect(ctx.destination);
-  g.rev=ctx.createConvolver();g.rev.buffer=impulse(4);const ro=ctx.createGain();ro.gain.value=.55;g.rev.connect(ro).connect(g.out);
-  const bus=v=>{const u=ctx.createGain();u.gain.value=v;const f=ctx.createGain();f.gain.value=1;u.connect(f).connect(g.out);return{u,f}};
+  const ir=impulse(4);
+  g.rev=ctx.createConvolver();g.rev.buffer=ir;const ro=ctx.createGain();ro.gain.value=.55;g.rev.connect(ro).connect(g.out);
+  // chaque groupe (musique, sons) a sa propre réverbération : tout ce qu'il produit passe par son volume et son interrupteur
+  const bus=v=>{const u=ctx.createGain();u.gain.value=v;const f=ctx.createGain();f.gain.value=1;u.connect(f).connect(g.out);const rev=ctx.createConvolver();rev.buffer=ir;const r=ctx.createGain();r.gain.value=.55;rev.connect(r).connect(u);return{u,f,rev}};
   g.sons=bus(VOL.sons);g.mus=bus(VOL.musique);
   const brown=noiseBuf('brown',7),pink=noiseBuf('pink',7);
   // 1er cycle : les cigales
-  g.cigOn=ctx.createGain();g.cigOn.gain.setValueAtTime(0,t0-1);g.cigOn.gain.linearRampToValueAtTime(1,t0+6);g.cigOn.connect(g.sons.u);
+  g.cigOn=ctx.createGain();g.cigRevOn=ctx.createGain();[g.cigOn,g.cigRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.linearRampToValueAtTime(1,t0+6)});g.cigOn.connect(g.sons.u);g.cigRevOn.connect(g.sons.rev);
   [[5600,-.55,.9,6.3],[6400,.5,.6,7.4],[4900,.05,.45,5.1]].forEach(([f,pan,lvl,rate],i)=>{
     const src=ctx.createBufferSource();src.buffer=pink;src.loop=true;src.loopStart=i*1.7;
     const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=4;
@@ -743,10 +745,10 @@ function build(t0){
     const lv=ctx.createGain();lv.gain.value=lvl*.9;const p=panner();
     src.connect(bp).connect(bp2).connect(buzz).connect(puls).connect(phrase).connect(lv);
     if(p){p.pan.value=pan;lv.connect(p).connect(g.cigOn)}else lv.connect(g.cigOn);
-    const rs=ctx.createGain();rs.gain.value=.25;lv.connect(rs).connect(g.rev);
+    const rs=ctx.createGain();rs.gain.value=.25;lv.connect(rs).connect(g.cigRevOn);
     src.start();am.start();po.start();g.srcs.push(src,am,po)});
   // 2e cycle : le vent dans la lavande, qui respire avec toi
-  g.ventOn=ctx.createGain();g.ventOn.gain.setValueAtTime(0,t0+T);g.ventOn.gain.linearRampToValueAtTime(1,t0+T+8);g.ventOn.connect(g.sons.u);
+  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T);x.gain.linearRampToValueAtTime(1,t0+T+8)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
   const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
   g.windLp=ctx.createBiquadFilter();g.windLp.type='lowpass';g.windLp.frequency.value=280;g.windLp.Q.value=.4;
   g.wind=ctx.createGain();g.wind.gain.value=.03;ws.connect(g.windLp).connect(g.wind).connect(g.ventOn);ws.start();g.srcs.push(ws);
@@ -754,10 +756,10 @@ function build(t0){
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // 3e cycle : la musique, une nappe en ré majeur qui s'ouvre à l'inspiration
-  g.musOn=ctx.createGain();g.musOn.gain.setValueAtTime(0,t0+2*T);g.musOn.gain.linearRampToValueAtTime(1,t0+2*T+10);g.musOn.connect(g.mus.u);
+  g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+2*T);g.musOn.gain.linearRampToValueAtTime(1,t0+2*T+10);g.musOn.connect(g.mus.u);
   g.padLp=ctx.createBiquadFilter();g.padLp.type='lowpass';g.padLp.frequency.value=500;g.padLp.Q.value=.5;
   g.pad=ctx.createGain();g.pad.gain.value=.1;g.padLp.connect(g.pad).connect(g.musOn);
-  const pr=ctx.createGain();pr.gain.value=.4;g.pad.connect(pr).connect(g.rev);
+  const pr=ctx.createGain();pr.gain.value=.4;g.musOn.connect(pr).connect(g.mus.rev);
   g.voices=CHORDS[0].map((f,i)=>{const vg=ctx.createGain();vg.gain.value=.16;const pan=panner();
     const o1=ctx.createOscillator();o1.type='triangle';o1.frequency.value=f;const o2=ctx.createOscillator();o2.type='sine';o2.frequency.value=f*1.004;
     o1.connect(vg);o2.connect(vg);if(pan){pan.pan.value=(i-2)*.25;vg.connect(pan).connect(g.padLp)}else vg.connect(g.padLp);
@@ -778,7 +780,7 @@ function bowl(w,f,{attack=.015,len=8,gain=.4,dest,send=.45,doux=false}={}){
 }
 function cricket(w,f,pan){const p=panner();const o=ctx.createGain();if(p){p.pan.value=pan;o.connect(p).connect(G.cigOn)}else o.connect(G.cigOn);
   const n=2+Math.floor(Math.random()*2);for(let i=0;i<n;i++){const t=w+i*.055;const x=ctx.createOscillator();x.type='sine';x.frequency.value=f;const e=ctx.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(.012,t+.007);e.gain.linearRampToValueAtTime(0,t+.032);x.connect(e).connect(o);x.start(t);x.stop(t+.05)}}
-function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Math.random()*1.4-.7;o.connect(p).connect(G.ventOn)}else o.connect(G.ventOn);const s=ctx.createGain();s.gain.value=.5;o.connect(s).connect(G.rev);
+function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Math.random()*1.4-.7;o.connect(p).connect(G.ventOn)}else o.connect(G.ventOn);const s=ctx.createGain();s.gain.value=.5;o.connect(s).connect(G.oisRevOn);
   const n=2+Math.floor(Math.random()*4),f0=2500+Math.random()*1300,up=Math.random()<.6;let t=w;
   for(let i=0;i<n;i++){const d=.07+Math.random()*.08;const x=ctx.createOscillator();x.type='sine';const a=f0*(1+(Math.random()-.5)*.15);
     x.frequency.setValueAtTime(a,t);x.frequency.exponentialRampToValueAtTime(a*(up?1.35:.75),t+d);const e=ctx.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(.02,t+.012);e.gain.linearRampToValueAtTime(0,t+d);
@@ -835,7 +837,7 @@ function tick(){
   // le gong d'une minute : un bol grave, effleuré, qui s'éteint lentement
   if(!sess.gong&&sess.t0+60<H){sess.gong=true;bowl(sess.t0+60.3,196,{attack:.35,len:14,gain:.2,dest:G.out,send:.8,doux:true})}
   // les cigales et les grillons s'effacent pendant le 3e cycle avant la fin
-  if(!sess.cigFin&&sess.end-3*T<H){sess.cigFin=true;const d=Math.max(sess.end-3*T,n);G.cigOn.gain.cancelScheduledValues(d);G.cigOn.gain.setValueAtTime(1,d);G.cigOn.gain.linearRampToValueAtTime(0,sess.end-2*T)}
+  if(!sess.cigFin&&sess.end-3*T<H){sess.cigFin=true;const d=Math.max(sess.end-3*T,n);[G.cigOn,G.cigRevOn].forEach(x=>{x.gain.cancelScheduledValues(d);x.gain.setValueAtTime(1,d);x.gain.linearRampToValueAtTime(0,sess.end-2*T)})}
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, au même timbre doux que le gong d'une minute
     [[440,.2],[369.99,2.8],[293.66,5.4]].forEach(([f,dt])=>bowl(e+dt,f,{attack:.3,len:11,gain:.2,dest:G.out,send:.8,doux:true}));
