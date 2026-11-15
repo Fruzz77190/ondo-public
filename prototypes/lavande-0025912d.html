@@ -51,10 +51,19 @@ button{font-family:inherit;color:inherit}
 .fill{height:100%;width:0;border-radius:2px;background:var(--card)}
 .time{text-align:center;margin-top:10px;font:700 14px/1.2 var(--font);color:var(--onPrimary);font-variant-numeric:tabular-nums}
 .toast{position:absolute;left:24px;right:24px;top:112px;padding:10px 14px;border-radius:16px;background:var(--card);font:700 13px/18px var(--font);color:var(--ink);text-align:center;box-shadow:0 6px 20px rgba(59,44,31,.18)}
-.fin{position:absolute;inset:0;pointer-events:none}
-.fin .msg{position:absolute;top:128px;left:0;right:0;text-align:center;padding:0 32px;display:flex;flex-direction:column;gap:10px;align-items:center}
-.fin .msg strong{font:600 28px/36px var(--font);color:var(--ink)}
-.fin .acts{position:absolute;left:24px;right:24px;bottom:44px;display:flex;flex-direction:column;gap:12px;pointer-events:auto}
+.apres{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;padding-top:96px}
+.apres .main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:6px 20px 0}
+.apres .carte{height:170px;border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 4px 14px rgba(59,44,31,.08)}
+.apres .carte svg{width:100%;height:100%;display:block}
+.apres h2{font:800 28px/34px var(--font);color:var(--ink);margin:0}
+.calme{background:var(--card);border-radius:24px;box-shadow:0 4px 14px rgba(59,44,31,.08);padding:20px 18px 16px}
+.calme .q{margin:0 0 14px;font:800 17px/22px var(--font);color:var(--ink)}
+.piste{display:flex;justify-content:space-between;background:var(--sunk);border-radius:999px;padding:6px}
+.piste button{width:48px;height:48px;border-radius:50%;border:0;background:transparent;font:800 18px var(--font);color:var(--ink);cursor:pointer}
+.piste button[aria-pressed="true"]{background:#4b2f61;color:#fbefe4}
+.bouts{display:flex;justify-content:space-between;margin-top:8px;padding:0 10px;font:700 13px var(--font);color:var(--muted)}
+.apres .ft{padding:12px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.passer{border:0;background:none;font:700 15px var(--font);color:var(--muted);cursor:pointer;padding:4px 12px}
 .apparait{animation:apparait 1.4s ease both}
 @keyframes apparait{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border-radius:999px;padding:15px 20px;font:800 17px/22px var(--font);cursor:pointer;border:1.5px solid transparent}
@@ -133,11 +142,20 @@ button{font-family:inherit;color:inherit}
 
   <div class="toast" id="toast" hidden></div>
 
-  <div class="fin" id="fin" hidden>
-    <div class="msg apparait"><strong>C'est terminé.</strong><span class="guide">Prends ton temps pour rouvrir les yeux.</span></div>
-    <div class="acts apparait" style="animation-delay:.9s">
-      <button class="btn plein" id="btnEncore">Recommencer</button>
-      <button class="btn second" id="btnAccueil">Revenir à la fiche</button>
+  <!-- Après la séance, comme l'app V1 (base-ecrans-app, écran 09) -->
+  <div class="apres" id="fin" hidden>
+    <div class="main">
+      <div class="carte"><svg id="sceneApres" aria-hidden="true"></svg></div>
+      <h2>Et maintenant, comment te sens-tu ?</h2>
+      <div class="calme">
+        <p class="q">Après la séance</p>
+        <div class="piste" id="echelle"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
+        <div class="bouts"><span>Agité</span><span>Serein</span></div>
+      </div>
+    </div>
+    <div class="ft">
+      <button class="btn plein" id="btnEncore">Valider</button>
+      <button class="passer" id="btnAccueil">Passer</button>
     </div>
   </div>
 
@@ -664,7 +682,7 @@ let duree=3;
 $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duree=+b.dataset.v;$('segDuree').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('btnGoTxt').textContent='Commencer · '+duree+' min'});
 
 /* ---------- Paysages (scène du kit, identique à l'app) ---------- */
-try{qPlace($('scene'),'lavande',{w:390,h:844,seed:7});qPlace($('sceneFiche'),'lavande',{w:390,h:270,seed:7})}catch(e){toast('Paysage : '+e.message,8000)}
+try{qPlace($('scene'),'lavande',{w:390,h:844,seed:7});qPlace($('sceneFiche'),'lavande',{w:390,h:270,seed:7});qPlace($('sceneApres'),'lavande',{w:390,h:190,seed:7})}catch(e){toast('Paysage : '+e.message,8000)}
 
 /* ---------- Le rythme : 4 s / 8 s avec battements de 1 s (moteur de l'app) ---------- */
 const ease=x=>(1-Math.cos(Math.PI*x))/2;
@@ -773,7 +791,7 @@ function phraseCigale(i,w){const g=G['phr'+i].gain,on=2.5+Math.random()*6,off=.8
 let sess=null;
 function demarrer(){
   // 1. L'écran passe tout de suite à la séance, sans attendre le son.
-  $('fiche').hidden=true;$('fin').hidden=true;$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
+  $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
   $('creteG').style.transition='none';$('creteG').style.opacity=1;
   const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;
   // 2. Le son : créé et réveillé pendant le toucher (obligatoire sur iPhone).
@@ -816,8 +834,11 @@ function tick(){
   while(sess.bi<H&&sess.bi<stop){bird(sess.bi);sess.bi+=9+Math.random()*14}
   // le gong d'une minute : un bol grave, effleuré, qui s'éteint lentement
   if(!sess.gong&&sess.t0+60<H){sess.gong=true;bowl(sess.t0+60.3,196,{attack:.35,len:14,gain:.2,dest:G.out,send:.8,doux:true})}
+  // les cigales et les grillons s'effacent pendant le 3e cycle avant la fin
+  if(!sess.cigFin&&sess.end-3*T<H){sess.cigFin=true;const d=Math.max(sess.end-3*T,n);G.cigOn.gain.cancelScheduledValues(d);G.cigOn.gain.setValueAtTime(1,d);G.cigOn.gain.linearRampToValueAtTime(0,sess.end-2*T)}
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
-    [[880,.2],[739.99,2.6],[587.33,5]].forEach(([f,dt])=>bowl(e+dt,f,{len:7,gain:.38,dest:G.out}));
+    // les trois coups de la fin, au même timbre doux que le gong d'une minute
+    [[440,.2],[369.99,2.8],[293.66,5.4]].forEach(([f,dt])=>bowl(e+dt,f,{attack:.3,len:11,gain:.2,dest:G.out,send:.8,doux:true}));
     G.mus.f.gain.setValueAtTime(1,e);G.mus.f.gain.linearRampToValueAtTime(0,e+7);
     G.sons.f.gain.setValueAtTime(1,e+5);G.sons.f.gain.linearRampToValueAtTime(0,e+15)}
 }
@@ -842,7 +863,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sess&&!se
 
 /* ---------- Départ et fin ---------- */
 $('btnGo').addEventListener('click',e=>{e.stopPropagation();try{demarrer()}catch(err){toast('Erreur au démarrage : '+err.message,10000)}});
-$('btnEncore').addEventListener('click',e=>{e.stopPropagation();arreter();demarrer()});
+$('echelle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+$('btnEncore').addEventListener('click',e=>{e.stopPropagation();arreter();montrerFiche()});
 $('btnAccueil').addEventListener('click',e=>{e.stopPropagation();arreter();montrerFiche()});
 function montrerFiche(){$('fiche').hidden=false;$('fin').hidden=true;$('creteG').style.transition='none';$('creteG').style.opacity=1;$('pap').setAttribute('opacity',0);dessinerCrete(-1)}
 
