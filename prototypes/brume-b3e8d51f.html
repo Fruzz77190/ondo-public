@@ -763,7 +763,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['la','re','fad'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['la','re','fad','do'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -868,10 +868,10 @@ function planifier(g,w,k){
   follow(G.wind.gain,w,g.d,(.03+.06*l0)*v0,(.03+.06*l1)*v1);
   follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1);
   follow(G.rustle.gain,w,g.d,(.004+.007*l0)*v0,(.004+.007*l1)*v1);
-  // le gong entre au 2e cycle : Ré au début de l'inspire, Sol au début de l'expire (musique en sol mineur ;
-  // les fichiers gardent les noms « la » et « re » du premier lieu : la = Ré aigu, re = Sol, fad = Si bémol)
+  // le gong entre au 2e cycle : Do au début de l'inspire (Ré une fois sur 4), Sol au début de l'expire (musique en sol mineur ;
+  // fichiers : do = Do, la = Ré aigu, re = Sol, fad = Si bémol — noms hérités du premier lieu)
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
-    const suivante=w+g.d+S[(k+1)%S.length].d;try{frapper(g.n==='Inspire'?'la':'re',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    const suivante=w+g.d+S[(k+1)%S.length].d;const c=Math.floor(k/S.length)-GONG_CYCLE,noteIn=c%4===3?'la':'do';try{frapper(g.n==='Inspire'?noteIn:'re',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -947,29 +947,48 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
   $('balFil').setAttribute('d',`M${PX},${PY} L${p.x.toFixed(1)},${p.y.toFixed(1)}`);
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',p.x.toFixed(1));$(id).setAttribute('cy',p.y.toFixed(1))})}
 
-/* ---------- Les cerfs marchent lentement, la brume ondule (Julien, 18 nov.) ---------- */
-// Les cerfs vont et viennent doucement le long de leur colline (moins de 2 points par seconde) et se retournent
-// quand ils changent de sens. La brume : chaque bande ondule légèrement et flotte de haut en bas, chacune à son rythme.
-const ANIM={cerfs:[],brumes:[]};
+/* ---------- Les cerfs traversent la forêt, la brume ondule (Julien, 18 nov.) ---------- */
+// Toutes les 3 minutes, deux cerfs arrivent par la droite et un par la gauche ; ils avancent doucement le long de leur
+// colline, s'arrêtent de temps en temps, puis sortent de l'écran. Chaque marche démarre et s'arrête en douceur.
+// Le cycle suit l'horloge de la séance (il s'arrête pendant la pause et se cale avec l'outil « aller à »).
+const ANIM={cerfs:[],brumes:[]},CYCLE_CERFS=180;
+// Pour chaque cerf : sens (1 = vers la droite), départ dans le cycle, puis [marche (s), distance, pause (s)]…
+const TRAJETS=[
+  {sens:1, depart:4, etapes:[[52,150,8],[40,120,9],[52,200,0]]},    // le grand cerf, par la gauche
+  {sens:-1,depart:0, etapes:[[50,150,10],[45,140,7],[55,180,0]]},   // par la droite
+  {sens:-1,depart:12,etapes:[[48,140,9],[50,160,8],[45,170,0]]}];   // par la droite, un peu derrière
 (function(){const sc=$('scene'),W=390,H=844,b=H*.72,ph=2*1.3;
   const yCol=x=>{const u=x*.015+ph;return b+Math.sin(u)*4+Math.sin(u*2.3+ph)*4*.35+3};
   [...sc.querySelectorAll('g')].filter(g=>g.querySelector('ellipse[fill="#9a5e52"]')).forEach((g,i)=>{
-    const x0=[W*.3,W*.38,W*.44][i]||W*.4,d=[1,-1,1][i]||1;
-    ANIM.cerfs.push({g,x0,d,y0:yCol(x0),yCol,A:[34,26,40][i]||30,P:[128,110,146][i]||120,f:[0,2.1,4.2][i]||0})});
+    const x0=[W*.3,W*.38,W*.44][i]||W*.4,d=[1,-1,1][i]||1,tr=TRAJETS[i]||TRAJETS[0];
+    ANIM.cerfs.push({g,x0,d,y0:yCol(x0),yCol,tr,xDebut:tr.sens>0?-40:430})});
+  // Les volutes de brume du second plan, dans la moitié haute de l'écran (Julien, 18 nov.) : elles avancent doucement comme
+  // des vagues (bords ondulés qui se déplacent, et une légère houle verticale). Les bandes de brume plus bas restent immobiles.
   [...sc.querySelectorAll('rect[fill="#fbefe4"]')].forEach((r,i)=>{
-    const y=+r.getAttribute('y'),h=+r.getAttribute('height'),p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    const y=+r.getAttribute('y'),h=+r.getAttribute('height');if(y>=H/2)return;
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('fill','#fbefe4');p.setAttribute('opacity',r.getAttribute('opacity'));r.parentNode.insertBefore(p,r);r.remove();
-    ANIM.brumes.push({p,y,h,k:2*Math.PI/(210+i*23),v:2*Math.PI/(24+i*5),f:i*1.7,A:2.2+(i%2)*.8})})})();
-function animerBrume(t){
-  ANIM.cerfs.forEach(c=>{const u=2*Math.PI*t/c.P+c.f,dx=c.A*Math.sin(u),v=c.A*2*Math.PI/c.P*Math.cos(u);
-    const s=Math.tanh(v/.25)*c.d,pas=Math.abs(v)>.15?Math.abs(Math.sin(t*Math.PI*1.6+c.f))*.6:0;
-    const dy=c.yCol(c.x0+dx)-c.y0-pas,sx=(Math.abs(s)<.08?.08*Math.sign(s||1):s);
-    c.g.setAttribute('transform',`translate(${(c.x0+dx).toFixed(2)} ${dy.toFixed(2)}) scale(${(sx).toFixed(3)} 1) translate(${(-c.x0).toFixed(2)} 0)`)});
-  ANIM.brumes.forEach(m=>{const ph=t*m.v+m.f,dy=Math.sin(t*2*Math.PI/17+m.f)*1.5;let top='',bot='';
-    for(let x=-10;x<=400;x+=10){top+=(top?' L':'M')+x+','+(m.y+dy+m.A*Math.sin(x*m.k+ph)).toFixed(1)}
-    for(let x=400;x>=-10;x-=10){bot+=' L'+x+','+(m.y+m.h+dy+m.A*Math.sin(x*m.k*1.3+ph*1.2+1)).toFixed(1)}
+    ANIM.brumes.push({p,y,h,k:2*Math.PI/(300+i*40),v:2*Math.PI/(34+i*8)*(i%2?-1:1),f:i*1.7,A:9-i*2})})})();
+// Où en est un cerf à l'instant u du cycle : distance parcourue et vitesse (0 à l'arrêt). Chaque marche suit une courbe douce
+// (départ et arrivée sans à-coup), d'où des mouvements fluides.
+function etatCerf(tr,u){let t=u-tr.depart,dist=0;if(t<0)return{dist:-1,v:0};
+  for(const [m,d,p] of tr.etapes){if(t<m){const q=t/m;return{dist:dist+d*(q-Math.sin(2*Math.PI*q)/(2*Math.PI)),v:d/m*(1-Math.cos(2*Math.PI*q))}}
+    t-=m;dist+=d;if(t<p)return{dist,v:0};t-=p}
+  return{dist:dist+1000,v:0}}
+function animerBrume(t,el){
+  ANIM.cerfs.forEach(c=>{
+    const u=el==null||el<0?-1:el%CYCLE_CERFS,e=u<0?{dist:-1,v:0}:etatCerf(c.tr,u);
+    if(e.dist<0||e.dist>500){c.g.setAttribute('opacity','0');return}
+    c.g.setAttribute('opacity','1');
+    const x=c.xDebut+c.tr.sens*e.dist,pas=e.v>.3?Math.abs(Math.sin(el*Math.PI*1.8))*.7*Math.min(1,e.v/2):0;
+    const dy=c.yCol(x)-c.y0-pas,sx=c.tr.sens*c.d;   // il regarde toujours dans le sens de sa marche
+    c.g.setAttribute('transform',`translate(${x.toFixed(2)} ${dy.toFixed(2)}) scale(${sx} 1) translate(${(-c.x0).toFixed(2)} 0)`)});
+  ANIM.brumes.forEach(m=>{const ph=t*m.v+m.f,dy=Math.sin(t*2*Math.PI/19+m.f)*3;let top='',bot='';
+    // bord haut : une grande vague qui avance, plus une petite qui l'arrondit (aspect de volute)
+    for(let x=-10;x<=400;x+=8){top+=(top?' L':'M')+x+','+(m.y+dy+m.A*Math.sin(x*m.k+ph)+m.A*.35*Math.sin(x*m.k*2.7-ph*1.4+1)).toFixed(1)}
+    for(let x=400;x>=-10;x-=8){bot+=' L'+x+','+(m.y+m.h+dy+m.A*.8*Math.sin(x*m.k*1.2+ph*.9+2)+m.A*.3*Math.sin(x*m.k*3.1+ph*1.6)).toFixed(1)}
     m.p.setAttribute('d',top+bot+' Z')})}
-animerBrume(0);
+animerBrume(0,-1);
 
 /* ---------- La chouette (Julien, 18 nov.) : à 30 s, les 15 premières secondes de son chant, puis à nouveau chaque minute ---------- */
 // Assez bas pour ne pas couvrir le gong (environ 8 dB sous lui).
@@ -996,8 +1015,8 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 function frame(){
   requestAnimationFrame(frame);
   if(!sess)return;
-  animerBrume(performance.now()/1000);
   const el=now()-sess.t0;
+  animerBrume(performance.now()/1000,el);
   const word=$('word'),count=$('count'),guide=$('guide');
   if(el<0){
     const n=Math.min(3,Math.ceil(-el));const key='c'+n;
