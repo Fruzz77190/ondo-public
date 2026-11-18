@@ -424,7 +424,7 @@ const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lune-9c3e7b20/';
 // Mêmes niveaux que les autres lieux (musique, gong).
-const NIV={musique:.239,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239*1.3,gong:.906};   // musique +30 % (Julien, 19 nov.)   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
@@ -440,7 +440,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['re5','si4','sol4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['re5','la4','sol4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -513,7 +513,7 @@ function demarrer(depart=0){
   // 1. L'écran passe tout de suite à la séance, sans attendre le son.
   $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
   $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1;$(id).hidden=false});$('count').hidden=true;
-  const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;eclipse(0);
+  const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;etoileFilante(-1);fumee(0);
   // 2. Le son : créé et réveillé pendant le toucher (obligatoire sur iPhone).
   let son=true;
   try{
@@ -545,11 +545,11 @@ function planifier(g,w,k){
   if(g.n==='Expire'){[[G.wind.gain,lv],[G.rustle.gain,lr]].forEach(([p,f])=>{p.setValueAtTime(0,w);p.linearRampToValueAtTime(f(l0)*v0,w+1);follow(p,w+1,g.d-1,f(l0)*v0,f(l1)*v1)})}
   else{follow(G.wind.gain,w,g.d,lv(l0)*v0,lv(l1)*v1);follow(G.rustle.gain,w,g.d,lr(l0)*v0,lr(l1)*v1)}
   follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1);
-  // le gong entre au 3e cycle : Ré au début de l'inspire, Si au début de l'expire (musique en la mineur ;
-  // fichiers : re5 = Ré, si4 = Si, sol4 = Sol)
+  // le gong entre au 3e cycle : Ré au début de l'inspire, La (sous le Si, Julien 19 nov.) au début de l'expire ;
+  // fichiers : re5 = Ré, la4 = La, sol4 = Sol
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
     let suivante=w+g.d,j=k+1;while(S[j%S.length].n==='Retiens'){suivante+=S[j%S.length].d;j++}
-    try{frapper(g.n==='Inspire'?'re5':'si4',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    try{frapper(g.n==='Inspire'?'re5':'la4',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -564,7 +564,7 @@ function tick(){
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['re5',.2],['si4',2.8],['sol4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['re5',.2],['la4',2.8],['sol4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
@@ -631,28 +631,39 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),t=sec<0?0:s.p*s.g.d
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',x.toFixed(2));$(id).setAttribute('cy',y.toFixed(2))});
   const p=sec>=0&&s.g.n==='Retiens'?s.p:-1;$('bague').setAttribute('d',anneauO(x,y,Math.max(0,p)));$('bague').setAttribute('opacity',p>0?.95:0)}
 
-/* ---------- L'éclipse (Julien, 19 nov.) ---------- */
-// La lune est pleine au début ; l'ombre de la Terre glisse lentement sur elle pendant toute la séance (quelle que soit sa durée)
-// et la recouvre entièrement à la fin. La partie dans l'ombre reste à peine visible, d'un brun-rouge très sombre, comme lors
-// d'une vraie éclipse ; le halo s'atténue à mesure qu'elle est recouverte.
-const ECLIPSE=(function(){const sc=$('scene'),g=sc.querySelector('.pfsun');if(!g)return null;const cs=[...g.querySelectorAll('circle')];
-  const disque=cs[3],NS='http://www.w3.org/2000/svg';if(!disque)return null;
-  cs.slice(4).forEach(c=>c.remove());   // l'ombre du croissant de l'app : la lune est pleine
-  const cx=+disque.getAttribute('cx'),cy=+disque.getAttribute('cy'),r=+disque.getAttribute('r');
-  const cp=document.createElementNS(NS,'clipPath');cp.id='disqueLune';const c=document.createElementNS(NS,'circle');
-  [['cx',cx],['cy',cy],['r',r]].forEach(([k,v])=>c.setAttribute(k,v));cp.appendChild(c);
-  let defs=sc.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');sc.insertBefore(defs,sc.firstChild)}defs.appendChild(cp);
-  const ombre=document.createElementNS(NS,'circle');[['r',(r*1.25).toFixed(2)],['fill','#2b2130'],['opacity',.9],['clip-path','url(#disqueLune)']].forEach(([k,v])=>ombre.setAttribute(k,v));
-  disque.after(ombre);
-  // le reflet de la lune sur le lac pâlit avec elle
-  const refl=[...sc.querySelectorAll('[transform]')].find(e=>e!==g&&/^translate\(273/.test(e.getAttribute('transform')||''));
-  return{ombre,cx,cy,r,R:r*1.25,refl,anneaux:cs.slice(0,3).map(a=>({a,o:+a.getAttribute('opacity')}))}})();
-const adoucir=x=>x*x*(3-2*x);
-function eclipse(p){if(!ECLIPSE)return;const e=adoucir(clamp(p)),d=(ECLIPSE.r+ECLIPSE.R)*(1-e);
-  ECLIPSE.ombre.setAttribute('cx',(ECLIPSE.cx-.88*d).toFixed(2));ECLIPSE.ombre.setAttribute('cy',(ECLIPSE.cy-.49*d).toFixed(2));
-  ECLIPSE.anneaux.forEach(({a,o})=>a.setAttribute('opacity',(o*(1-.7*e)).toFixed(3)));
-  if(ECLIPSE.refl)ECLIPSE.refl.setAttribute('opacity',(1-.8*e).toFixed(3))}
-eclipse(0);
+/* ---------- La lune ne change pas pendant la séance (Julien, 19 nov.) ---------- */
+// Pleine, comme sur la miniature de la fiche : on enlève l'ombre du croissant de l'app.
+(function(){const g=$('scene').querySelector('.pfsun');if(g)[...g.querySelectorAll('circle')].slice(4).forEach(c=>c.remove())})();
+
+/* ---------- La cheminée de la maison fume, à partir d'1 minute (Julien, 19 nov.) ---------- */
+// Même dessin que le lac des cimes : une petite cheminée de la couleur de la maison, trois volutes qui montent et s'effacent
+// (ici d'un gris bleuté, pour la nuit). La fumée apparaît doucement à partir d'1 minute (sur 8 s).
+const FUMEE=(function(){const sc=$('scene'),cab=[...sc.querySelectorAll('path')].find(p=>/v-12 l11,-9 l11,9 v12 Z$/.test(p.getAttribute('d')||''));if(!cab)return null;
+  const m=/^M([-\d.]+),([-\d.]+)/.exec(cab.getAttribute('d')),hx=+m[1]+11,hy=+m[2],NS='http://www.w3.org/2000/svg';
+  const ch=document.createElementNS(NS,'rect');[['x',hx+4],['y',hy-24],['width',3.4],['height',8],['fill',cab.getAttribute('fill')]].forEach(([k,v])=>ch.setAttribute(k,v));
+  cab.parentNode.insertBefore(ch,cab);
+  const vol=[0,1,2].map(()=>{const p=document.createElementNS(NS,'path');[['fill','none'],['stroke','#d8dcec'],['stroke-linecap','round']].forEach(([k,v])=>p.setAttribute(k,v));cab.parentNode.insertBefore(p,cab.nextSibling);return p});
+  return{x:hx+5.7,y:hy-24,s:.75,vol,niv:0}})();
+function animerFumee(t){if(!FUMEE)return;const{x,y,s}=FUMEE;
+  FUMEE.vol.forEach((p,k)=>{const q=(t/6+k/3)%1,bas=y-q*26*s,ecart=Math.sin(t*.7+k*2.1)*3*s*q,ond=6*s*(.6+.4*Math.sin(t*.9+k*1.3)),h=12*s*(.7+.3*q);
+    p.setAttribute('d',`M${(x+ecart).toFixed(2)},${bas.toFixed(2)} q${(-ond).toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)} q${ond.toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)}`);
+    p.setAttribute('stroke-width',(3*s*(1-.35*q)).toFixed(2));p.setAttribute('opacity',(.75*FUMEE.niv*Math.sin(Math.PI*q)).toFixed(3))})}
+function fumee(el){if(!FUMEE)return;FUMEE.niv=el<60?0:Math.min(1,(el-60)/8)}
+animerFumee(0);
+
+/* ---------- Une étoile filante toutes les 30 secondes (Julien, 19 nov.) ---------- */
+// Un trait fin qui file en diagonale et s'efface en 1,4 s, tour à tour à gauche et au milieu du ciel (loin de l'orbite et
+// des textes). Sa traînée est faite de 5 petits segments, du plus pâle (queue) au plus lumineux (tête).
+const FILANTE=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',g=document.createElementNS(NS,'g');g.setAttribute('pointer-events','none');
+  const nuages=sc.querySelector('.pfclouds');if(nuages)nuages.before(g);else sc.appendChild(g);
+  const seg=[0,1,2,3,4].map(i=>{const l=document.createElementNS(NS,'line');[['stroke','#fff3d6'],['stroke-width',(1+i*.25).toFixed(2)],['stroke-linecap','round'],['opacity',0]].forEach(([k,v])=>l.setAttribute(k,v));g.appendChild(l);return l});
+  return{seg,trajets:[{x:170,y:70,dx:-.65,dy:.76,L:120},{x:215,y:40,dx:-.75,dy:.66,L:110}],duree:1.4}})();
+function etoileFilante(el){const F=FILANTE,n=el<30?-1:Math.floor(el/30),k=n<0?-1:(el-30*n)/F.duree;
+  if(k<0||k>1){F.seg.forEach(l=>l.setAttribute('opacity',0));return}
+  const f=F.trajets[n%2],d=f.L*(1-Math.pow(1-k,2)),hx=f.x+f.dx*d,hy=f.y+f.dy*d,q=Math.min(d,46*Math.sin(Math.PI*Math.min(1,k*1.4))),o=.9*Math.sin(Math.PI*k);
+  F.seg.forEach((l,i)=>{const a=q*(1-i/5),b=q*(1-(i+1)/5);
+    [['x1',hx-f.dx*a],['y1',hy-f.dy*a],['x2',hx-f.dx*b],['y2',hy-f.dy*b]].forEach(([nm,v])=>l.setAttribute(nm,v.toFixed(1)));
+    l.setAttribute('opacity',(o*(.15+.85*(i+1)/5)).toFixed(3))})}
 
 /* ---------- La musique dure jusqu'au bout (même réglage que les autres lieux) ---------- */
 const DUREE_MUSIQUE=600;
@@ -672,6 +683,7 @@ const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUS
 const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 function frame(){
   requestAnimationFrame(frame);
+  animerFumee(performance.now()/1000);
   if(!sess)return;
   const el=now()-sess.t0;
   const word=$('word'),count=$('count'),guide=$('guide');
@@ -689,8 +701,8 @@ function frame(){
     if(guide.textContent!==GUIDE[s.g.pill])guide.textContent=GUIDE[s.g.pill];
     const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1);$('ph2').classList.toggle('on',s.g.pill===2)}
-    dessinerCrete(Math.max(0,el-.001));eclipse(el/sess.total);
-  }else if(!sess.fin){eclipse(1);
+    dessinerCrete(Math.max(0,el-.001));etoileFilante(el);fumee(el);
+  }else if(!sess.fin){etoileFilante(-1);
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
     $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
