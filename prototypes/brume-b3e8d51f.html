@@ -747,13 +747,14 @@ const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-brume-b3e8d51f/';
 // Mêmes niveaux que les autres lieux (musique et gong) ; la chouette 8 dB sous le gong, pour ne pas le couvrir.
-const NIV={musique:.239,gong:.906,chouette:.36};   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239,gong:.906*.9,chouette:.36};   // gong -10 % (Julien, 18 nov.)   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Forêt de brume (Julien, 18 nov.) : la musique dès le début (progressivement, sur le 1er cycle), le gong au 2e cycle,
 // la chouette à 30 s puis chaque minute. Ni vent, ni son d'ambiance.
-const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=1;
+// la musique commence 5 s dans le morceau (son début est presque silencieux) et part déjà à mi-volume (Julien, 18 nov.)
+const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=1,MUS_OFF=5,MUS_DEPART=.5;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -799,7 +800,7 @@ function build(t0){
   g.ventNiv=t=>0;   // pas de vent dans la forêt de brume
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
-  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=1;g.gong.connect(g.sons.u);
@@ -854,7 +855,7 @@ function demarrer(depart=0){
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
       LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});
       if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
-        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=depart-debutMus;sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
+        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=depart-debutMus+MUS_OFF;sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
       jouerMedias()}
     catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
@@ -883,12 +884,12 @@ function tick(){
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
   // la musique repart de son début au moment où elle entre (3e cycle)
   planifierChouette(n,H);
-  if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+MUS_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=0}catch(e){}}
+  if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+MUS_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=MUS_OFF}catch(e){}}
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
     [['la',.2],['fad',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
-    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN);   // la musique s'éteint en 5 s, après l'effacement de la courbe
+    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     G.sons.f.gain.setValueAtTime(1,e+5);G.sons.f.gain.linearRampToValueAtTime(0,e+15)}
   if(sess.endDone&&!sess.mediasFin&&n>sess.end+16){sess.mediasFin=true;pauserMedias()}
 }
@@ -948,27 +949,27 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',p.x.toFixed(1));$(id).setAttribute('cy',p.y.toFixed(1))})}
 
 /* ---------- Les cerfs traversent la forêt, la brume ondule (Julien, 18 nov.) ---------- */
-// Toutes les 3 minutes, deux cerfs arrivent par la droite et un par la gauche ; ils avancent doucement le long de leur
-// colline, s'arrêtent de temps en temps, puis sortent de l'écran. Chaque marche démarre et s'arrête en douceur.
-// Le cycle suit l'horloge de la séance (il s'arrête pendant la pause et se cale avec l'outil « aller à »).
+// Toutes les 3 minutes (Julien, 18 nov.) : un cerf suivi de son faon arrive par la gauche, un faon seul par la droite ;
+// ils avancent doucement le long de leur colline, s'arrêtent de temps en temps, puis sortent de l'écran.
+// Chaque marche démarre et s'arrête en douceur. Le cycle suit l'horloge de la séance (pause, outil « aller à »).
 const ANIM={cerfs:[],brumes:[]},CYCLE_CERFS=180;
-// Pour chaque cerf : sens (1 = vers la droite), départ dans le cycle, puis [marche (s), distance, pause (s)]…
+// Pour chaque animal : sens (1 = vers la droite), départ dans le cycle, décalage au départ, taille, puis [marche (s), distance, pause (s)]…
 const TRAJETS=[
-  {sens:1, depart:4, etapes:[[52,150,8],[40,120,9],[52,200,0]]},    // le grand cerf, par la gauche
-  {sens:-1,depart:0, etapes:[[50,150,10],[45,140,7],[55,180,0]]},   // par la droite
-  {sens:-1,depart:12,etapes:[[48,140,9],[50,160,8],[45,170,0]]}];   // par la droite, un peu derrière
+  {sens:1, depart:4,   recul:0,  taille:1,  etapes:[[52,150,8],[40,120,9],[52,200,0]]},   // le cerf, par la gauche
+  {sens:1, depart:5.4, recul:20, taille:.7, etapes:[[52,150,8],[40,120,9],[52,200,0]]},   // son faon, juste derrière lui
+  {sens:-1,depart:10,  recul:0,  taille:.7, etapes:[[48,140,9],[50,160,8],[45,170,0]]}];  // un faon seul, par la droite
 (function(){const sc=$('scene'),W=390,H=844,b=H*.72,ph=2*1.3;
   const yCol=x=>{const u=x*.015+ph;return b+Math.sin(u)*4+Math.sin(u*2.3+ph)*4*.35+3};
   [...sc.querySelectorAll('g')].filter(g=>g.querySelector('ellipse[fill="#9a5e52"]')).forEach((g,i)=>{
     const x0=[W*.3,W*.38,W*.44][i]||W*.4,d=[1,-1,1][i]||1,tr=TRAJETS[i]||TRAJETS[0];
-    ANIM.cerfs.push({g,x0,d,y0:yCol(x0),yCol,tr,xDebut:tr.sens>0?-40:430})});
-  // Les volutes de brume du second plan, dans la moitié haute de l'écran (Julien, 18 nov.) : elles avancent doucement comme
-  // des vagues (bords ondulés qui se déplacent, et une légère houle verticale). Les bandes de brume plus bas restent immobiles.
+    ANIM.cerfs.push({g,x0,d,y0:yCol(x0),yCol,tr,xDebut:(tr.sens>0?-40:430)-tr.sens*tr.recul})});
+  // Les volutes de brume (Julien, 18 nov.) : sur tout l'écran, elles avancent doucement comme des vagues (bords ondulés qui
+  // se déplacent, légère houle verticale). Les grandes nappes du haut bougent plus ; les bandes fines du bas un peu moins.
   [...sc.querySelectorAll('rect[fill="#fbefe4"]')].forEach((r,i)=>{
-    const y=+r.getAttribute('y'),h=+r.getAttribute('height');if(y>=H/2)return;
+    const y=+r.getAttribute('y'),h=+r.getAttribute('height'),haut=y<H/2;
     const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('fill','#fbefe4');p.setAttribute('opacity',r.getAttribute('opacity'));r.parentNode.insertBefore(p,r);r.remove();
-    ANIM.brumes.push({p,y,h,k:2*Math.PI/(300+i*40),v:2*Math.PI/(34+i*8)*(i%2?-1:1),f:i*1.7,A:9-i*2})})})();
+    ANIM.brumes.push({p,y,h,k:2*Math.PI/(300+i*40),v:2*Math.PI/(30+i*7)*(i%2?-1:1),f:i*1.7,A:haut?13-i*2.5:Math.min(7,h*.45),H:haut?4:2})})})();
 // Où en est un cerf à l'instant u du cycle : distance parcourue et vitesse (0 à l'arrêt). Chaque marche suit une courbe douce
 // (départ et arrivée sans à-coup), d'où des mouvements fluides.
 function etatCerf(tr,u){let t=u-tr.depart,dist=0;if(t<0)return{dist:-1,v:0};
@@ -981,9 +982,9 @@ function animerBrume(t,el){
     if(e.dist<0||e.dist>500){c.g.setAttribute('opacity','0');return}
     c.g.setAttribute('opacity','1');
     const x=c.xDebut+c.tr.sens*e.dist,pas=e.v>.3?Math.abs(Math.sin(el*Math.PI*1.8))*.7*Math.min(1,e.v/2):0;
-    const dy=c.yCol(x)-c.y0-pas,sx=c.tr.sens*c.d;   // il regarde toujours dans le sens de sa marche
-    c.g.setAttribute('transform',`translate(${x.toFixed(2)} ${dy.toFixed(2)}) scale(${sx} 1) translate(${(-c.x0).toFixed(2)} 0)`)});
-  ANIM.brumes.forEach(m=>{const ph=t*m.v+m.f,dy=Math.sin(t*2*Math.PI/19+m.f)*3;let top='',bot='';
+    const y=c.yCol(x)-pas,sx=c.tr.sens*c.d,f=c.tr.taille;   // il regarde toujours dans le sens de sa marche ; les faons sont plus petits
+    c.g.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(sx*f).toFixed(3)} ${f}) translate(${(-c.x0).toFixed(2)} ${(-c.y0).toFixed(2)})`)});
+  ANIM.brumes.forEach(m=>{const ph=t*m.v+m.f,dy=Math.sin(t*2*Math.PI/19+m.f)*m.H;let top='',bot='';
     // bord haut : une grande vague qui avance, plus une petite qui l'arrondit (aspect de volute)
     for(let x=-10;x<=400;x+=8){top+=(top?' L':'M')+x+','+(m.y+dy+m.A*Math.sin(x*m.k+ph)+m.A*.35*Math.sin(x*m.k*2.7-ph*1.4+1)).toFixed(1)}
     for(let x=400;x>=-10;x-=8){bot+=' L'+x+','+(m.y+m.h+dy+m.A*.8*Math.sin(x*m.k*1.2+ph*.9+2)+m.A*.3*Math.sin(x*m.k*3.1+ph*1.6)).toFixed(1)}
@@ -1009,7 +1010,7 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
   P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
   $('papAiles').setAttribute('transform',`scale(${(.25+.75*Math.abs(Math.cos(el*11))).toFixed(2)} 1)`)}
 
-const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
+const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUSIQUE=FIN_FONDU+5,FIN_ECRAN=FIN_MUSIQUE+3;   // l'écran de fin arrive 3 s après la fin de la musique (Julien, 18 nov., tous les lieux)
 // La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
 const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 function frame(){

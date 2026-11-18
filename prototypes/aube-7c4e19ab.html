@@ -570,7 +570,7 @@ function tick(){
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
     [['la',.2],['fad',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
-    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN);   // la musique s'éteint en 5 s, après l'effacement de la courbe
+    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     G.sons.f.gain.setValueAtTime(1,e+5);G.sons.f.gain.linearRampToValueAtTime(0,e+15)}
   if(sess.endDone&&!sess.mediasFin&&n>sess.end+16){sess.mediasFin=true;pauserMedias()}
 }
@@ -630,7 +630,7 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
   P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
   $('papAiles').setAttribute('transform',`scale(${(.25+.75*Math.abs(Math.cos(el*11))).toFixed(2)} 1)`)}
 
-const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
+const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUSIQUE=FIN_FONDU+5,FIN_ECRAN=FIN_MUSIQUE+3;   // l'écran de fin arrive 3 s après la fin de la musique (Julien, 18 nov., tous les lieux)
 // La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
 const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi";
 /* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
