@@ -728,7 +728,7 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.239,cigales:.393,gong:.725};   // gong +3 dB (Julien, 18 nov. : pas assez présent quand la musique arrive)
+const NIV={musique:.239,cigales:.393,gong:.906};   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // À 1 minute, les cigales s'effacent pendant que la musique arrive (fondu sur une respiration, 14 s).
 const AVEC_MUSIQUE=true,FONDU_DE=60,FONDU_DUREE=T;
@@ -773,7 +773,7 @@ function build(t0){
   const rs=ctx.createBufferSource();rs.buffer=pink;rs.loop=true;rs.playbackRate.value=.9;
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
-  g.ventNiv=3.16;   // +10 dB : le vent reste discret (2 dB sous la musique et les cigales) mais s'entend
+  g.ventNiv=1.58;   // vent baissé de 50 % (Julien, 18 nov.)
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+FONDU_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+FONDU_DE+FONDU_DUREE);
