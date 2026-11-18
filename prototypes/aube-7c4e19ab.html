@@ -2,6 +2,10 @@
 <html lang="fr">
 <head>
 <meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ondo aube">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ondo · Aube sonore</title>
@@ -49,6 +53,8 @@ button{font-family:inherit;color:inherit}
 .zone .doux:not(:empty){background:rgba(255,249,243,.84);border-radius:18px;padding:10px 18px;box-shadow:0 6px 20px rgba(59,44,31,.10)}
 .zone .doux:not(:empty):not(.entier):not(.sort){animation:carte .9s ease both}
 @keyframes carte{from{opacity:0}to{opacity:1}}
+/* aube : le mot et le décompte un peu plus petits et un peu plus haut, pour ne plus empiéter sur le soleil (Julien, 18 nov.) */
+.phase{top:114px}.word{font:600 40px/50px var(--font)}.count{font:800 46px/52px var(--font)}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -384,7 +390,7 @@ const MOTS=['Inspire','Expire'];
 const GUIDE=['Gonfle doucement le ventre…','Relâche, tout doucement…'];
 // Les messages doux, écrits seulement, chacun pendant deux respirations (choix de Julien, 15 nov. 2026).
 const MESSAGES=[
-  {de:60,a:80,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:60,a:66,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
   {de:120,a:140,texte:'Tu fais ça très bien, laisse-toi guider.'},
   // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
   {de:180,a:200,texte:"Laisse chaque expiration t'alléger un peu plus."},
