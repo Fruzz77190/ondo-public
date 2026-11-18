@@ -429,10 +429,10 @@ const NIV={musique:.239,oiseaux:.157*2.512*1.5,gong:.906};   // oiseaux +50 % (J
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
-// Aube (Julien, 18 nov.) : la musique et les oiseaux dès le 1er cycle (la musique commence avec la respiration), le vent au 2e,
-// le gong au 2e aussi (une respiration après la musique) ;
+// Aube (Julien, 18 nov.) : les oiseaux dès le 1er cycle ; le vent et la musique ensemble au 2e (la musique commence avec le vent) ;
+// le gong au 3e (une respiration après la musique) ;
 // les oiseaux s'effacent à partir d'1 minute (en 14 s, comme les cigales).
-const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,AMB_FIN=60,AMB_FIN_DUREE=14,GONG_CYCLE=1;
+const AVEC_MUSIQUE=true,MUS_DE=T,MUS_DUREE=T,AMB_FIN=60,AMB_FIN_DUREE=14,GONG_CYCLE=2;
 const LONGS=AVEC_MUSIQUE?['oiseaux','musique']:['oiseaux'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -474,14 +474,14 @@ function build(t0){
   const rs=ctx.createBufferSource();rs.buffer=pink;rs.loop=true;rs.playbackRate.value=.9;
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
-  // vent : niveaux de la lavande, puis -50 % pour l'aube (Julien, 18 nov.) ; +10 % pendant que la musique arrive (1er cycle)
+  // vent : niveaux de la lavande, puis -50 % pour l'aube (Julien, 18 nov.) ; +10 % pendant que la musique arrive (2e cycle)
   g.ventAvant=1.58*.8*.5;g.ventApres=1.58*.8*.5*1.1;
   g.ventNiv=t=>{const a=t0+MUS_DE,b=a+MUS_DUREE;return t<=a?g.ventAvant:t>=b?g.ventApres:g.ventAvant+(g.ventApres-g.ventAvant)*(t-a)/(b-a)};
-  // dès le début : la musique de Julien, depuis son début, qui arrive progressivement sur le 1er cycle
+  // 2e cycle, avec le vent : la musique de Julien, depuis son début, qui arrive progressivement
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
-  // 2e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
+  // 3e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=1;g.gong.connect(g.sons.u);
   // les trois coups de la fin sonnent jusqu'au bout, hors du fondu des sons
   g.gongFin=ctx.createGain();g.gongFin.gain.value=VOL.sons;g.gongFin.connect(g.out);
