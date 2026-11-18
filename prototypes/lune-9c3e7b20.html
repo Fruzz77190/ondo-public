@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Ondo lune">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ondo · Lune sonore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap">
+<style>
+/* Prototype V2 d'Ondo : la fiche du lieu et l'écran de séance de l'app (390 × 844), avec le son.
+   Un seul look, celui de l'app (mode clair uniquement) : toutes les couleurs viennent des tokens d'Ondo. */
+:root{
+  color-scheme:light;
+  --bg:#fcf1e6;--card:#fff9f3;--sunk:#f5e2d2;--line:#e6cdb9;--page:#f3e6da;
+  --ink:#3b2c1f;--muted:#75594a;--primary:#b4483a;--onPrimary:#fff9f3;--select2:#6b4e85;--gold:#ffd27a;--tag:#f6ecf6;
+  --pill:rgba(255,249,243,.7);--glass:rgba(255,249,243,.8);--panel:rgba(59,44,31,.35);--phase:rgba(255,249,243,.28);--track:rgba(255,249,243,.3);
+  --dim:rgba(46,29,30,.45);
+  /* violet du badge « Paupières de plomb » */
+  --plomb:#5f3f86;
+  --font:"Nunito",ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{height:100%;box-sizing:border-box}
+body{height:100%;margin:0;background:var(--page);color:var(--ink);font-family:var(--font);display:grid;place-items:center;overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;color:inherit}
+.stage{position:relative;overflow:hidden;height:min(100%,880px);aspect-ratio:390/844;max-width:100%;border-radius:44px;background:var(--bg);box-shadow:0 24px 60px rgba(59,44,31,.22);user-select:none;-webkit-user-select:none}
+@media (max-width:520px){.stage{width:100%;height:100%;aspect-ratio:auto;border-radius:0;box-shadow:none}}
+.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+.top{position:absolute;top:56px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.round{pointer-events:auto;width:44px;height:44px;border-radius:50%;border:0;background:var(--card);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 10px rgba(59,44,31,.12)}
+.round:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:3px solid var(--select2);outline-offset:2px}
+.pill{padding:8px 14px;border-radius:999px;background:var(--pill);font:800 13px/1.2 var(--font);color:var(--ink);white-space:nowrap}
+.phase{position:absolute;top:128px;left:0;right:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 28px;pointer-events:none}
+.word{font:600 46px/56px var(--font);color:var(--ink)}
+.word.chiffre{font:800 54px/116px var(--font);font-variant-numeric:tabular-nums}
+.count{font:800 54px/60px var(--font);color:var(--ink);font-variant-numeric:tabular-nums}
+.zone{display:grid;justify-items:center;max-width:320px}
+.zone>*{grid-area:1/1}
+.guide{font:600 16px/22px var(--font);color:var(--muted);min-height:22px;transition:opacity .9s ease}
+.doux{font:800 18px/26px var(--font);color:var(--plomb);text-wrap:balance}
+.doux span{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(7px);animation:mot 1.3s cubic-bezier(.22,.61,.36,1) forwards}
+.doux.sort{transition:opacity 1.6s ease,filter 1.6s ease;opacity:0;filter:blur(5px)}
+@keyframes mot{to{opacity:1;filter:blur(0);transform:none}}
+/* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
+.doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
+@keyframes entier{to{opacity:1}}
+/* lac de lune : paysage de nuit, textes en clair (comme dans l'app), et plus bas pour laisser la place à l'orbite (texteY 335) */
+#word,#count{color:#fff9f3}#guide{color:#fff9f3;font-weight:700}#doux{color:#fff9f3}#phaseBox{top:39.7%}
+.bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
+.panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
+.phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
+.phases span{padding:4px 8px;border-radius:999px;background:var(--phase);font:800 10.5px/1.3 var(--font);color:var(--onPrimary)}
+.phases span.on{background:var(--onPrimary);color:var(--ink)}
+.track{height:4px;border-radius:2px;background:var(--track);overflow:hidden}
+.fill{height:100%;width:0;border-radius:2px;background:var(--card)}
+.time{text-align:center;margin-top:10px;font:700 14px/1.2 var(--font);color:var(--onPrimary);font-variant-numeric:tabular-nums}
+.toast{position:absolute;left:24px;right:24px;top:112px;padding:10px 14px;border-radius:16px;background:var(--card);font:700 13px/18px var(--font);color:var(--ink);text-align:center;box-shadow:0 6px 20px rgba(59,44,31,.18)}
+.apres{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;padding-top:96px}
+.apres .main{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:6px 20px 0}
+.apres .carte{height:170px;border-radius:24px;overflow:hidden;background:var(--card);box-shadow:0 4px 14px rgba(59,44,31,.08)}
+.apres .carte svg{width:100%;height:100%;display:block}
+.apres h2{font:800 28px/34px var(--font);color:var(--ink);margin:0}
+.calme{background:var(--card);border-radius:24px;box-shadow:0 4px 14px rgba(59,44,31,.08);padding:20px 18px 16px}
+.calme .q{margin:0 0 14px;font:800 17px/22px var(--font);color:var(--ink)}
+.piste{display:flex;justify-content:space-between;background:var(--sunk);border-radius:999px;padding:6px}
+.piste button{width:48px;height:48px;border-radius:50%;border:0;background:transparent;font:800 18px var(--font);color:var(--ink);cursor:pointer}
+.piste button[aria-pressed="true"]{background:#4b2f61;color:#fbefe4}
+.bouts{display:flex;justify-content:space-between;margin-top:8px;padding:0 10px;font:700 13px var(--font);color:var(--muted)}
+.apres .ft{padding:12px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.passer{border:0;background:none;font:700 15px var(--font);color:var(--muted);cursor:pointer;padding:4px 12px}
+.apparait{animation:apparait 1.4s ease both}
+@keyframes apparait{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border-radius:999px;padding:15px 20px;font:800 17px/22px var(--font);cursor:pointer;border:1.5px solid transparent}
+.btn.plein{background:var(--primary);color:var(--onPrimary)}
+.btn.second{background:var(--card);border-color:var(--line);color:var(--ink)}
+/* Fiche du lieu (comme l'app V1) */
+.fiche{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;overflow-y:auto}
+.fiche .haut{position:relative;height:270px;flex:none}
+.fiche .haut svg{width:100%;height:100%;display:block}
+.fiche .rb{position:absolute;top:50px;width:34px;height:34px;border-radius:50%;background:var(--glass);display:grid;place-items:center}
+.fiche .ct{flex:1;display:flex;flex-direction:column;gap:12px;padding:18px 22px 30px}
+.kicker{font:800 12px/16px var(--font);letter-spacing:.96px;text-transform:uppercase;color:var(--primary);margin:0}
+.fiche h1{font:800 28px/34px var(--font);margin:0;color:var(--ink)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tags span{padding:5px 11px;border-radius:999px;background:var(--tag);font:800 12.5px/16px var(--font);color:var(--select2)}
+.lead{font:600 15px/21px var(--font);color:var(--muted);margin:0}
+.small{font:700 13px/18px var(--font);color:var(--ink);margin:0 0 6px}
+.seg{display:flex;padding:4px;border-radius:999px;background:var(--sunk)}
+.seg button{flex:1;border:0;border-radius:999px;background:transparent;padding:10px 0;font:800 14px/18px var(--font);color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 2px 8px rgba(59,44,31,.10)}
+.push{margin-top:auto}
+.voile{position:absolute;inset:0;background:var(--dim);display:flex;flex-direction:column;justify-content:flex-end}
+.sheet{background:var(--card);border-radius:28px 28px 0 0;padding:10px 20px 28px;box-shadow:0 -10px 40px rgba(46,29,30,.18);display:flex;flex-direction:column;gap:16px}
+.poignee{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 2px}
+.sheet h2{font:800 26px/32px var(--font);margin:0}
+/* outil de test (prototype seulement) : aller directement à un moment de la séance */
+.aller{display:flex;flex-direction:column;gap:10px;border-top:1.5px dashed var(--line);padding-top:14px}
+.aller p{margin:0;font:700 14px/18px var(--font);color:var(--muted)}
+.aller input{width:100%;accent-color:var(--primary)}
+.sous{font:600 15px/22px var(--font);color:var(--muted);margin:2px 0 0}
+.acts2{display:flex;flex-direction:column;gap:10px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion: reduce){.apparait{animation:none}.doux span{filter:none;transform:none;animation-duration:2s}}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <svg id="scene" class="layer" aria-hidden="true"></svg>
+  <svg id="fx" class="layer" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g id="creteG">
+      <path id="orbA0" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round" opacity=".4"/>
+      <path id="orbA1" fill="none" stroke="#ffd27a" stroke-width="7" stroke-linecap="round" opacity=".4"/>
+      <path id="orbA2" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round" opacity=".4"/>
+      <path id="orbTrace" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round"/>
+      <circle id="halo" cx="273" cy="141" r="22" fill="#ffd27a" opacity=".35"/>
+      <path id="bague" fill="none" stroke="#fff9f3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+      <circle id="point" cx="273" cy="141" r="11" fill="#ffd27a" stroke="#fff9f3" stroke-width="3"/>
+    </g>
+    <g id="pap" opacity="0">
+      <g id="papAiles">
+        <ellipse cx="-7.5" cy="-4" rx="8" ry="6.5" fill="#fff9f3"/><ellipse cx="7.5" cy="-4" rx="8" ry="6.5" fill="#fff9f3"/>
+        <ellipse cx="-5.5" cy="5" rx="5.2" ry="4.2" fill="#fbe3d6"/><ellipse cx="5.5" cy="5" rx="5.2" ry="4.2" fill="#fbe3d6"/>
+        <circle cx="-8" cy="-4.5" r="2.4" fill="#ffd27a"/><circle cx="8" cy="-4.5" r="2.4" fill="#ffd27a"/>
+      </g>
+      <rect x="-1.3" y="-7.5" width="2.6" height="15" rx="1.3" fill="#6b4f86"/>
+    </g>
+  </svg>
+
+  <div class="top">
+    <button class="round" id="btnPause" aria-label="Pause"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b2c1f" stroke-width="1.75" stroke-linecap="round"><path d="M9 5v14M15 5v14"/></svg></button>
+    <span class="pill" id="titre">Le lac de lune · Sommeil</span>
+    <button class="round" id="btnSon" aria-label="Couper le son" aria-pressed="false">
+      <svg id="icoSon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b2c1f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <svg id="icoMuet" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b2c1f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg>
+    </button>
+  </div>
+
+  <div class="phase" id="phaseBox">
+    <div class="word" id="word">Inspire</div>
+    <div class="count" id="count">4</div>
+    <div class="zone"><div class="guide" id="guide"></div><div class="doux" id="doux" aria-live="polite"></div></div>
+  </div>
+
+  <div class="bas" id="bas">
+    <div class="panel">
+      <div class="phases"><span id="ph0">Inspire 4</span><span id="ph1">Retiens 5</span><span id="ph2">Expire 6</span></div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="time" id="time">0:00</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- Après la séance, comme l'app V1 (base-ecrans-app, écran 09) -->
+  <div class="apres" id="fin" hidden>
+    <div class="main">
+      <div class="carte"><svg id="sceneApres" aria-hidden="true"></svg></div>
+      <h2>Et maintenant, comment te sens-tu ?</h2>
+      <div class="calme">
+        <p class="q">Après la séance</p>
+        <div class="piste" id="echelle"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
+        <div class="bouts"><span>Agité</span><span>Serein</span></div>
+      </div>
+    </div>
+    <div class="ft">
+      <button class="btn plein" id="btnEncore">Valider</button>
+      <button class="passer" id="btnAccueil">Passer</button>
+    </div>
+  </div>
+
+  <!-- Fiche du lieu, comme dans l'app V1 -->
+  <div class="fiche" id="fiche">
+    <div class="haut">
+      <svg id="sceneFiche" aria-hidden="true"></svg>
+      <span class="rb" style="left:16px" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b2c1f" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span>
+      <span class="rb" style="right:16px" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b4483a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span>
+    </div>
+    <div class="ct">
+      <p class="kicker">Sommeil · Niveau 2 sur 3</p>
+      <h1>Le lac de lune</h1>
+      <div class="tags"><span>Respiration 4-5-6</span><span>4 s / 5 s / 6 s</span></div>
+      <p class="lead">Inspire 4 s, retiens 5 s, expire 6 s par la bouche. Pour ralentir le corps avant de dormir.</p>
+      <div>
+        <p class="small">Durée</p>
+        <div class="seg" id="segDuree">
+          <button data-v="3" aria-pressed="true">3 min</button>
+          <button data-v="5" aria-pressed="false">5 min</button>
+          <button data-v="10" aria-pressed="false">10 min</button>
+        </div>
+      </div>
+      <div class="push">
+        <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 3 min</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div class="voile" id="pause" hidden>
+    <div class="sheet" role="dialog" aria-labelledby="titrePause">
+      <div class="poignee"></div>
+      <div><h2 id="titrePause">Pause</h2><p class="sous" id="pauseOu">0:00</p></div>
+      <div class="acts2">
+        <button class="btn plein" id="btnReprendre">Reprendre</button>
+        <button class="btn second" id="btnStop">Terminer la séance</button>
+      </div>
+      <div class="aller"><p>Test · aller directement à <b id="allerTxt">0:00</b></p><input type="range" id="allerR" min="0" max="180" step="5" value="0" aria-label="Moment de la séance"><button class="btn second" id="btnAller">Aller à ce moment</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Peacefull — scènes génératives. pfScene(svg, id, {seed}) dessine une scène ; renvoie {breathe(b)} pour l'animer (b entre 0 et 1). */
+(function () {
+  var NS = 'http://www.w3.org/2000/svg', W = 400, H = 300, uid = 0;
+  function rng(seed) { var s = seed * 9301 + 49297; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+  function mk(parent, n, a) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); parent.appendChild(e); return e; }
+  function ridge(base, amp, fr, ph, sharp, step) {
+    var d = 'M-10,' + H + ' L-10,' + base.toFixed(1);
+    for (var x = -10; x <= W + 10; x += (step || 6)) {
+      var u = x * fr + ph, y = sharp ? base - amp * (1 - Math.abs(Math.sin(u))) * (0.6 + 0.4 * Math.sin(u * 0.37 + 1))
+                                     : base + Math.sin(u) * amp + Math.sin(u * 2.3 + ph) * amp * 0.35;
+      d += ' L' + x + ',' + y.toFixed(1);
+    }
+    return d + ' L' + (W + 10) + ',' + H + ' Z';
+  }
+  function ridgeY(base, amp, fr, ph, x) { var u = x * fr + ph; return base + Math.sin(u) * amp + Math.sin(u * 2.3 + ph) * amp * 0.35; }
+
+  var SCENES = {
+    aube: { name: "La vallée de l'aube", sky: ['#f6b48e', '#f8c39f', '#fad1b0', '#fcdfc4', '#feeedb'], sun: '#f28c5b', halo: '#ffd9b8', sunX: .64, sunY: .50, sunR: 30,
+      far: '#ebc28c', mid: ['#e3a35f', '#cf7f45'], near: '#b4583a', path: '#fbe1bf', trees: 'round', treeC: '#8f3a33', cabin: true, birds: true, clouds: '#fff6ec' },
+    lac: { name: 'Le lac de lune', sky: ['#121c36', '#18264a', '#1f315c', '#283e6e', '#334c80'], sun: '#fbefe4', halo: '#a9c1ea', sunX: .70, sunY: .26, sunR: 19, moon: .55, stars: true,
+      far: '#2e4870', mid: ['#22385c', '#1a2b4a'], near: '#101a30', water: '#1d3157', trees: 'pine', treeC: '#0e172b', cabin: true, path: null },
+    pins: { name: 'Le col des pins', sky: ['#f9cf92', '#fad9a8', '#fbe3bf', '#fdedd5', '#fef6ea'], sun: '#f28c5b', halo: '#fde0b8', sunX: .30, sunY: .40, sunR: 26,
+      far: '#e5b98a', farSharp: true, mid: ['#c9a25a', '#a08646'], near: '#6f6236', path: '#fbe7c6', trees: 'pine', treeC: '#5a4e2a', birds: true, clouds: '#fffaf0' },
+    dunes: { name: 'Les dunes du matin', sky: ['#f6a96c', '#f8bb84', '#f9cc9e', '#fbdcb9', '#fdebd5'], sun: '#fff4dc', halo: '#ffe0a8', sunX: .50, sunY: .30, sunR: 34,
+      far: '#f0b060', mid: ['#e8953f', '#d4782e'], near: '#b85a22', path: '#fde3bd', birds: true },
+    phare: { name: 'Le phare du soir', sky: ['#5d3e82', '#7c5294', '#a8679a', '#d98a8e', '#f6b69a'], sun: '#f28c5b', halo: '#f9c4a0', sunX: .30, sunY: .60, sunR: 30,
+      far: '#7c5294', mid: [], near: '#2e1d3b', water: '#6b4787', lighthouse: true, birds: true, clouds: '#f4c7b8' }
+  };
+
+  window.pfScenes = SCENES;
+  window.pfScene = function (svg, id, o) {
+    o = o || {}; W = o.w || 400; H = o.h || 300; var S = SCENES[id], r = rng(o.seed || 3), g = 'pf' + (++uid);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', S.name); svg.innerHTML = '';
+    var defs = mk(svg, 'defs', {});
+    var f = mk(defs, 'filter', { id: g + 'n', x: 0, y: 0, width: '100%', height: '100%' });
+    mk(f, 'feTurbulence', { type: 'fractalNoise', baseFrequency: '.9', numOctaves: 2, seed: o.seed || 3, result: 'n' });
+    mk(f, 'feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.23  0 0 0 0 0.17  0 0 0 0 0.12  0 0 0 .09 0' });
+    var horizon = H * (S.water ? .62 : .66);
+
+    // ciel en strates
+    S.sky.forEach(function (c, i) {
+      var y0 = (horizon / S.sky.length) * i - 6;
+      mk(svg, 'path', { d: ridge(y0 + 4, 2.5, .02, i * 1.7 + (o.seed || 0)), fill: c });
+    });
+    if (S.stars) for (var i = 0; i < 46; i++) mk(svg, 'circle', { cx: r() * W, cy: r() * horizon * .8, r: (r() * 1.1 + .4).toFixed(2), fill: '#fbefe4', opacity: (.35 + r() * .6).toFixed(2) });
+
+    // soleil ou lune avec anneaux de souffle
+    var sun = mk(svg, 'g', {class:'pfsun'}), cx = W * S.sunX, cy = H * S.sunY, rings = [];
+    [2.6, 2.0, 1.5].forEach(function (k, i) { rings.push(mk(sun, 'circle', { cx: cx, cy: cy, r: S.sunR * k, fill: S.halo, opacity: [.16, .22, .32][i] })); });
+    mk(sun, 'circle', { cx: cx, cy: cy, r: S.sunR, fill: S.sun });
+    if (S.moon === true) mk(sun, 'circle', { cx: cx + S.sunR * .45, cy: cy - S.sunR * .25, r: S.sunR * .9, fill: S.sky[1] });
+    else if (typeof S.moon === 'number') { var k = .3 + S.moon * .75; mk(sun, 'circle', { cx: cx + S.sunR * .88 * k, cy: cy - S.sunR * .49 * k, r: S.sunR * .9, fill: S.sky[1] }); }
+
+    // nuages
+    var clouds = mk(svg, 'g', {class:'pfclouds'});
+    if (S.clouds) for (var c = 0; c < 3; c++) {
+      var y = H * (.12 + r() * .25), x = r() * W, w = 50 + r() * 50;
+      mk(clouds, 'rect', { x: x, y: y, width: w, height: 9, rx: 4.5, fill: S.clouds, opacity: .85 });
+      mk(clouds, 'rect', { x: x + w * .25, y: y - 7, width: w * .45, height: 9, rx: 4.5, fill: S.clouds, opacity: .85 });
+    }
+    // oiseaux
+    if (S.birds) for (var b = 0; b < 3; b++) {
+      var bx = W * (.15 + r() * .6), by = H * (.15 + r() * .18), s = 4 + r() * 3;
+      mk(svg, 'path', { d: 'M' + (bx - s) + ',' + by + ' q' + s / 2 + ',-' + s * .7 + ' ' + s + ',0 q' + s / 2 + ',-' + s * .7 + ' ' + s + ',0', fill: 'none', stroke: S.near, 'stroke-width': 1.4, 'stroke-linecap': 'round', opacity: .7 });
+    }
+    // montagnes lointaines
+    mk(svg, 'path', { d: ridge(horizon - 18, S.farSharp ? (S.farAmp || 46) : 14, S.farSharp ? (S.farFr || .016) : .012, 1.2 + (o.seed || 0), !!S.farSharp, 4), fill: S.far });
+    if (S.far2) mk(svg, 'path', { d: ridge(horizon - 4, S.far2Amp || 60, S.far2Fr || .026, 3.4 + (o.seed || 0), true, 3), fill: S.far2 });
+
+    // collines du milieu, arbres, cabane
+    var midBases = [], mids = S.mid || [];
+    mids.forEach(function (c, i) {
+      var base = (S.water ? horizon - 14 + i * 7 : horizon + 6 + i * 24), amp = 10 - i * 2, fr = .013 + i * .006, ph = 2 + i * 2.1 + (o.seed || 0);
+            var dd = ridge(base, amp, fr, ph); if (S.water) dd = dd.replace(/^M-10,\d+(\.\d+)?/, 'M-10,' + (horizon + 1)).replace(/L(\d+),\d+(\.\d+)? Z$/, 'L$1,' + (horizon + 1) + ' Z');
+      mk(svg, 'path', { d: dd, fill: c });
+      midBases.push({ base: base, amp: amp, fr: fr, ph: ph });
+      if (S.trees && !S.lighthouse) {
+        var n = i === 0 ? 7 : 5;
+        for (var t = 0; t < n; t++) {
+          var tx = r() * W, ty = ridgeY(base, amp, fr, ph, tx) + 2, sz = (i === 0 ? 7 : 10) + r() * 5, tc = S.treeC;
+          if (S.trees === 'pine') mk(svg, 'path', { d: 'M' + tx + ',' + (ty - sz * 2.4) + ' L' + (tx + sz * .55) + ',' + ty + ' L' + (tx - sz * .55) + ',' + ty + ' Z', fill: tc });
+          else if (S.trees === 'palm') { mk(svg, 'path', { d: 'M' + tx + ',' + ty + ' q' + sz * .3 + ',-' + sz + ' ' + sz * .1 + ',-' + sz * 2, stroke: tc, 'stroke-width': 1.6, fill: 'none' }); mk(svg, 'ellipse', { cx: tx + sz * .1, cy: ty - sz * 2, rx: sz * .7, ry: sz * .22, fill: tc }); }
+          else { mk(svg, 'rect', { x: tx - .8, y: ty - sz * 1.2, width: 1.6, height: sz * 1.2, fill: tc }); mk(svg, 'circle', { cx: tx, cy: ty - sz * 1.3, r: sz * .6, fill: tc }); }
+        }
+      }
+    });
+    // eau et reflet
+    var refl = mk(svg, 'g', {});
+    if (S.water) {
+      mk(svg, 'rect', { x: 0, y: horizon, width: W, height: H - horizon, fill: S.water });
+      for (var k = 0; k < 7; k++) { var ww = S.sunR * (1.6 - k * .18); mk(refl, 'rect', { x: cx - ww / 2, y: horizon + 8 + k * 9, width: ww, height: 3, rx: 1.5, fill: S.sun, opacity: (.75 - k * .08).toFixed(2) }); }
+      svg.appendChild(refl);
+      for (var k2 = 0; k2 < 9; k2++) mk(svg, 'rect', { x: r() * W, y: horizon + 10 + r() * (H - horizon - 20), width: 14 + r() * 26, height: 1.6, rx: .8, fill: S.halo, opacity: .25 });
+    }
+
+    if (S.cabin && midBases.length) {
+      var m0 = midBases[midBases.length - 1], hx = W * .22, hy = ridgeY(m0.base, m0.amp, m0.fr, m0.ph, hx) + 3;
+      mk(svg, 'path', { d: 'M' + (hx - 11) + ',' + hy + ' v-12 l11,-9 l11,9 v12 Z', fill: S.near });
+      mk(svg, 'rect', { x: hx - 3.5, y: hy - 9, width: 7, height: 6, rx: 1, fill: '#ffd27a' });
+      mk(svg, 'circle', { cx: hx, cy: hy - 6, r: 5.5, fill: '#ffd27a', opacity: .35 });
+    }
+    // phare et faisceau
+    var beam = null;
+    if (S.lighthouse) {
+      var lx = W * .78, ly = horizon - 6;
+      mk(svg, 'path', { d: 'M' + (W * .6) + ',' + H + ' Q' + (W * .66) + ',' + (horizon - 14) + ' ' + (W * .74) + ',' + (horizon - 10) + ' L' + W + ',' + (horizon - 18) + ' L' + W + ',' + H + ' Z', fill: S.near });
+      beam = mk(svg, 'path', { d: 'M' + lx + ',' + (ly - 44) + ' L' + (lx - 170) + ',' + (ly - 70) + ' L' + (lx - 170) + ',' + (ly - 30) + ' Z', fill: '#ffd27a', opacity: .22 });
+      mk(svg, 'path', { d: 'M' + (lx - 7) + ',' + ly + ' L' + (lx - 4.5) + ',' + (ly - 38) + ' h9 L' + (lx + 7) + ',' + ly + ' Z', fill: '#fbefe4' });
+      mk(svg, 'rect', { x: lx - 5.5, y: ly - 27, width: 11, height: 5, fill: '#b4483a' }); mk(svg, 'rect', { x: lx - 6, y: ly - 14, width: 12, height: 5, fill: '#b4483a' });
+      mk(svg, 'rect', { x: lx - 4, y: ly - 46, width: 8, height: 8, rx: 1.5, fill: '#ffd27a' });
+      mk(svg, 'path', { d: 'M' + (lx - 6) + ',' + (ly - 46) + ' h12 l-6,-6 Z', fill: S.near });
+    }
+    // premier plan et chemin qui s'enfonce
+    var nb = H * .86;
+    if (!S.lighthouse) mk(svg, 'path', { d: ridge(nb, 7, .011, 4 + (o.seed || 0)), fill: S.near });
+    if (S.path) {
+      var px = W * .52, top = midBases.length ? ridgeY(midBases[0].base, midBases[0].amp, midBases[0].fr, midBases[0].ph, W * .58) + 2 : horizon;
+      mk(svg, 'path', { d: 'M' + (px - 46) + ',' + H + ' C' + (px - 10) + ',' + (H - 40) + ' ' + (px + 70) + ',' + (nb - 10) + ' ' + (W * .6) + ',' + top +
+        ' C' + (px + 60) + ',' + (nb - 6) + ' ' + (px + 10) + ',' + (H - 36) + ' ' + (px + 30) + ',' + H + ' Z', fill: S.path, opacity: .9 });
+    }
+    // grain de papier
+    mk(svg, 'rect', { width: W, height: H, filter: 'url(#' + g + 'n)', opacity: 1, 'pointer-events': 'none' });
+
+    return {
+      name: S.name,
+      breathe: function (b) {
+        sun.setAttribute('transform', 'translate(0,' + (-b * 10).toFixed(2) + ')');
+        rings.forEach(function (c, i) { c.setAttribute('r', (S.sunR * ([2.6, 2.0, 1.5][i]) * (0.82 + 0.3 * b)).toFixed(1)); });
+        refl.setAttribute('transform', 'translate(' + cx + ',' + horizon + ') scale(' + (0.8 + .3 * b).toFixed(3) + ',1) translate(' + (-cx) + ',' + (-horizon) + ')');
+        clouds.setAttribute('transform', 'translate(' + (b * 6).toFixed(2) + ',0)');
+        if (beam) beam.setAttribute('opacity', (.12 + .2 * b).toFixed(2));
+      }
+    };
+  };
+})();
+</script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+function toast(msg,ms){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true},ms||5000)}
+window.addEventListener('error',e=>toast('Erreur : '+e.message,8000));
+
+/* ---------- Son coupé ou non (gardé sur le téléphone) ; les volumes seront dans les Réglages de l'app ---------- */
+let muet=false;try{muet=localStorage.getItem('ondo-proto-muet')==='1'}catch(e){}
+function renderSon(){$('icoSon').hidden=muet;$('icoMuet').hidden=!muet;$('btnSon').setAttribute('aria-pressed',String(muet));$('btnSon').setAttribute('aria-label',muet?'Remettre le son':'Couper le son')}
+renderSon();
+
+/* ---------- Fiche : durée comme dans la V1 (3, 5 ou 10 min, 3 min par défaut) ---------- */
+let duree=3;
+$('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duree=+b.dataset.v;$('segDuree').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('btnGoTxt').textContent='Commencer · '+duree+' min'});
+
+/* ---------- Paysages (scène du kit, identique à l'app) ---------- */
+let SC=null;
+const pleineLune=svg=>{const g=svg.querySelector('.pfsun');if(g)[...g.querySelectorAll('circle')].slice(4).forEach(c=>c.remove())};
+try{SC=pfScene($('scene'),'lac',{w:390,h:844,seed:4});SC.breathe(.85);
+  pfScene($('sceneFiche'),'lac',{w:390,h:270,seed:4}).breathe(.85);pleineLune($('sceneFiche'));
+  pfScene($('sceneApres'),'lac',{w:390,h:190,seed:4}).breathe(.85);pleineLune($('sceneApres'))}catch(e){toast('Paysage : '+e.message,8000)}
+
+/* ---------- Le rythme : inspire 4 s, retiens 5 s, expire 6 s (respiration 4-5-6 de l'app) ---------- */
+const ease=x=>(1-Math.cos(Math.PI*x))/2;
+const clamp=x=>Math.max(0,Math.min(1,x));
+const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Retiens',d:5,a:1,b:1,pill:1},{n:'Expire',d:6,a:1,b:0,pill:2}];
+const T=S.reduce((s,g)=>s+g.d,0);
+const MOTS=['Inspire','Retiens','Expire'];
+const GUIDE=['Inspire par le nez…','Retiens, sans forcer…','Expire longuement…'];
+// Les messages doux, écrits seulement : chacun reste 10 secondes, dans tous les lieux (Julien, 18 nov. 2026).
+const MESSAGES=[
+  {de:60,a:70,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
+  // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
+  {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
+  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose.'},
+  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer."},
+  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
+  {de:420,a:430,texte:"Chaque inspiration t'apporte un peu plus de calme."},
+  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise."},
+  {de:540,a:550,texte:'Encore quelques respirations, savoure ce moment.'}
+];
+function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
+const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+
+/* ---------- Horloge : celle du son ; si le son ne démarre pas, l'horloge du téléphone prend le relais ---------- */
+let ctx=null;
+const clock={audio:true,base:0,pauseAt:null};
+function now(){if(clock.audio&&ctx)return ctx.currentTime;const t=clock.pauseAt!=null?clock.pauseAt:performance.now()/1000;return t-clock.base}
+function passerHorlogeTel(t){clock.audio=false;clock.base=performance.now()/1000-t;clock.pauseAt=null}
+
+/* ---------- Son ---------- */
+// Outil de test « aller à » : la séance peut reprendre avant le zéro de l'horloge du son ; un réglage tombé dans le passé
+// est alors simplement appliqué tout de suite (le navigateur refuse les temps négatifs).
+[['setValueAtTime',1],['linearRampToValueAtTime',1],['exponentialRampToValueAtTime',1],['setTargetAtTime',1],['cancelScheduledValues',0]].forEach(([m,i])=>{
+  const f=AudioParam.prototype[m];if(!f)return;AudioParam.prototype[m]=function(...a){if(a[i]<0)a[i]=0;return f.apply(this,a)}});
+function noiseBuf(kind,sec){const sr=ctx.sampleRate,n=Math.floor(sr*sec),b=ctx.createBuffer(2,n,sr);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);let l=0,b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+    for(let i=0;i<n;i++){const w=Math.random()*2-1;
+      if(kind==='brown'){l=(l+0.02*w)/1.02;d[i]=l*3.2}
+      else{b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.969*b2+w*.153852;b3=.8665*b3+w*.3104856;b4=.55*b4+w*.5329522;b5=-.7616*b5-w*.016898;d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;b6=w*.115926}}
+    const f=Math.floor(sr*.05);for(let i=0;i<f;i++){const k=i/f;d[i]=d[i]*k+d[n-f+i]*(1-k)}}
+  return b}
+function impulse(sec){const sr=ctx.sampleRate,n=Math.floor(sr*sec),b=ctx.createBuffer(2,n,sr);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.8)}return b}
+function follow(param,w,d,from,to){param.setValueAtTime(from,w);const N=14;for(let i=1;i<=N;i++){const p=i/N;param.linearRampToValueAtTime(from+(to-from)*ease(p),w+d*p)}}
+const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
+// Le mélange par défaut (plus tard réglable dans Réglages : « Musique » et « Sons de la respiration »)
+const VOL={musique:1.15,sons:.75};
+// Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
+const SONS='sons-lune-9c3e7b20/';
+// Mêmes niveaux que les autres lieux (musique, gong).
+const NIV={musique:.239,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
+//   // cigales -20 % (Julien, 18 nov.)
+//   // gong +3 dB puis +25 % (Julien, 18 nov.)
+//   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
+// Lac de lune (Julien, 19 nov.) : la musique dès le début (à partir de la 3e seconde du morceau, dont le début est silencieux),
+// le gong au 3e cycle, le vent au 4e cycle ; pendant les rétentions, ni gong ni vent.
+const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=.7;
+const LONGS=['musique'];
+// Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
+const DIAG={frappes:0,manque:0,derniere:'—',err:''};
+// Gong accordé à la musique (ré majeur) : La à l'inspire, Ré à l'expire ; La, Fa dièse, Ré pour la fin.
+// Le gong d'origine montait en 5 s : il est remis à pleine force dès la frappe, sinon la musique (qui joue les mêmes notes) le cachait.
+const MEDIA={};
+function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
+media('musique');
+const GONGS={};let gongsEnCours=null;
+const gongsCharges=Promise.all(['re5','si4','sol4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+function decoderGongs(){if(gongsEnCours)return gongsEnCours;
+  gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
+    .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
+function jouerMedias(){LONGS.forEach(n=>{const p=MEDIA[n].el.play();if(p&&p.catch)p.catch(err=>toast('Son « '+n+' » : '+err.message,8000))})}
+function pauserMedias(){Object.values(MEDIA).forEach(m=>{try{m.el.pause()}catch(e){}})}
+
+let G=null;
+function build(t0){
+  const g={srcs:[]};
+  g.mute=ctx.createGain();g.mute.gain.value=muet?0:1;
+  g.out=ctx.createGain();g.out.gain.value=1;
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.3;
+  g.out.connect(g.mute).connect(comp).connect(ctx.destination);
+  const ir=impulse(4);
+  // chaque groupe (musique, sons) a son volume et son interrupteur de fin
+  const bus=v=>{const u=ctx.createGain();u.gain.value=v;const f=ctx.createGain();f.gain.value=1;u.connect(f).connect(g.out);const rev=ctx.createConvolver();rev.buffer=ir;const r=ctx.createGain();r.gain.value=.55;rev.connect(r).connect(u);return{u,f,rev}};
+  g.sons=bus(VOL.sons);g.mus=bus(VOL.musique);
+  const brown=noiseBuf('brown',7),pink=noiseBuf('pink',7);
+  // les fichiers longs (musique, cigales) sont lus en continu par le téléphone, puis passent par nos réglages de volume
+  LONGS.forEach(n=>{const m=media(n);if(!m.src)m.src=ctx.createMediaElementSource(m.el);try{m.src.disconnect()}catch(e){}});
+  // 1er cycle : les cigales
+  g.cigOn=ctx.createGain();g.cigOn.gain.value=0;g.cigOn.connect(g.sons.u);
+  // (pas de son d'ambiance ici)
+  // 2e cycle : le vent dans la lavande, qui respire avec toi
+  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+3*T);x.gain.linearRampToValueAtTime(1,t0+3*T+6)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
+  const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
+  g.windLp=ctx.createBiquadFilter();g.windLp.type='lowpass';g.windLp.frequency.value=280;g.windLp.Q.value=.4;
+  g.wind=ctx.createGain();g.wind.gain.value=.03;ws.connect(g.windLp).connect(g.wind).connect(g.ventOn);ws.start();g.srcs.push(ws);
+  const rs=ctx.createBufferSource();rs.buffer=pink;rs.loop=true;rs.playbackRate.value=.9;
+  const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
+  g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
+  // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
+  g.ventNiv=t=>1.58*.8*.5*1.5*1.1;   // le même niveau que le vent de la vallée de l'aube une fois la musique là
+  // 3e cycle : la musique de Julien, depuis son début
+  g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
+    const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
+  // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
+  g.gong=ctx.createGain();g.gong.gain.value=1;g.gong.connect(g.sons.u);
+  // les trois coups de la fin sonnent jusqu'au bout, hors du fondu des sons
+  g.gongFin=ctx.createGain();g.gongFin.gain.value=VOL.sons;g.gongFin.connect(g.out);
+  return g;
+}
+function applyMute(){if(G&&ctx)G.mute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08)}
+$('btnSon').addEventListener('click',e=>{e.stopPropagation();muet=!muet;try{localStorage.setItem('ondo-proto-muet',muet?'1':'0')}catch(err){}renderSon();applyMute()});
+
+// Une frappe de gong. Il s'efface nettement pendant la dernière seconde de l'inspire (ou de l'expire) : -12 dB en haut de la courbe
+// (ou en bas), pour sentir yeux fermés que le souffle va changer ; il continue de baisser pendant la pause (-15 dB),
+// puis s'éteint sous la frappe suivante en 1,6 s.
+function frapper(nom,w,suivante,dest,niv=1,finPhase){const b=GONGS[nom];if(!b||!G){DIAG.manque++;return}DIAG.frappes++;DIAG.derniere=nom+' à '+(sess?Math.round(w-sess.t0):'?')+' s';
+  const s=ctx.createBufferSource();s.buffer=b;const e=ctx.createGain();const L=NIV.gong*niv,B=Math.pow(10,-9/20);
+  e.gain.setValueAtTime(L,w);
+  if(suivante){const g=e.gain,F=finPhase||suivante-.5,H=Math.pow(10,-12/20),P=Math.pow(10,-15/20);g.setValueAtTime(L,F-1);
+    // rampes simples, fiables sur tous les téléphones
+    [[.25,.146],[.5,.5],[.75,.854],[1,1]].forEach(([dt,p])=>g.linearRampToValueAtTime(L*(1-(1-H)*p),F-1+dt));
+    g.linearRampToValueAtTime(L*P,suivante);
+    [[.4,.5625],[.8,.25],[1.2,.0625],[1.6,0]].forEach(([dt,q])=>g.linearRampToValueAtTime(L*P*q,suivante+dt))}
+  s.connect(e).connect(dest||G.gong);const n0=ctx.currentTime;
+  if(w<n0){if(n0-w>b.duration-.2)return;s.start(n0,n0-w)}else s.start(w);
+  if(suivante)s.stop(suivante+1.7);G.srcs.push(s)}
+function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Math.random()*1.4-.7;o.connect(p).connect(G.ventOn)}else o.connect(G.ventOn);const s=ctx.createGain();s.gain.value=.5;o.connect(s).connect(G.oisRevOn);
+  const n=2+Math.floor(Math.random()*4),f0=2500+Math.random()*1300,up=Math.random()<.6;let t=w;
+  for(let i=0;i<n;i++){const d=.07+Math.random()*.08;const x=ctx.createOscillator();x.type='sine';const a=f0*(1+(Math.random()-.5)*.15);
+    x.frequency.setValueAtTime(a,t);x.frequency.exponentialRampToValueAtTime(a*(up?1.35:.75),t+d);const e=ctx.createGain();e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(.02,t+.012);e.gain.linearRampToValueAtTime(0,t+d);
+    x.connect(e).connect(o);x.start(t);x.stop(t+d+.02);t+=d+.05+Math.random()*.08}}
+
+/* ---------- Séance ---------- */
+let sess=null;
+function demarrer(depart=0){
+  // 1. L'écran passe tout de suite à la séance, sans attendre le son.
+  $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
+  $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1;$(id).hidden=false});$('count').hidden=true;
+  const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;eclipse(0);
+  // 2. Le son : créé et réveillé pendant le toucher (obligatoire sur iPhone).
+  let son=true;
+  try{
+    try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+    if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC()}
+    const r=ctx.resume&&ctx.resume();if(r&&r.catch)r.catch(()=>{});
+    const b=ctx.createBuffer(1,1,22050),s0=ctx.createBufferSource();s0.buffer=b;s0.connect(ctx.destination);s0.start(0);
+  }catch(e){son=false;toast("Le son n'a pas pu démarrer sur ce téléphone : la séance continue sans le son.",7000)}
+  clock.audio=son;clock.pauseAt=null;
+  const t=son?ctx.currentTime:0;if(!son)passerHorlogeTel(0);
+  // depart > 0 (outil de test) : la séance reprend directement à ce moment, sans le décompte
+  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T,c0=Math.floor(depart/T);
+  sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
+  if(son){try{G=build(t0);decoderGongs();regleMusique(total);
+      // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
+      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=Math.max(0,MUS_OFF-3.2*(sess.vitMus||1))}catch(e){}});sess.musDep=true;
+      if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
+        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){el.currentTime=MUS_OFF+depart*(sess.vitMus||1);sess.musDep=true}else el.currentTime=depart+3.2}catch(e){}})}
+      jouerMedias()}
+    catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
+  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
+  tick();
+}
+
+function planifier(g,w,k){
+  const l0=g.a,l1=g.b,v0=G.ventNiv(w),v1=G.ventNiv(w+g.d),lv=x=>.03+.06*x,lr=x=>.004+.007*x;
+  // lac de lune (Julien, 19 nov.) : pendant la rétention, ni vent ni gong ; le vent s'éteint en 1 s et revient en 1 s à l'expire
+  if(g.n==='Retiens'){[[G.wind.gain,lv(l0)*v0],[G.rustle.gain,lr(l0)*v0]].forEach(([p,v])=>{p.setValueAtTime(v,w);p.linearRampToValueAtTime(0,w+1);p.setValueAtTime(0,w+g.d)});return}
+  if(g.n==='Expire'){[[G.wind.gain,lv],[G.rustle.gain,lr]].forEach(([p,f])=>{p.setValueAtTime(0,w);p.linearRampToValueAtTime(f(l0)*v0,w+1);follow(p,w+1,g.d-1,f(l0)*v0,f(l1)*v1)})}
+  else{follow(G.wind.gain,w,g.d,lv(l0)*v0,lv(l1)*v1);follow(G.rustle.gain,w,g.d,lr(l0)*v0,lr(l1)*v1)}
+  follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1);
+  // le gong entre au 3e cycle : Ré au début de l'inspire, Si au début de l'expire (musique en la mineur ;
+  // fichiers : re5 = Ré, si4 = Si, sol4 = Sol)
+  if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
+    let suivante=w+g.d,j=k+1;while(S[j%S.length].n==='Retiens'){suivante+=S[j%S.length].d;j++}
+    try{frapper(g.n==='Inspire'?'re5':'si4',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+}
+
+function tick(){
+  if(!sess)return;
+  if(sess.son&&clock.audio&&ctx&&ctx.currentTime-sess.ctx0<.05&&performance.now()-sess.depart>1500&&$('pause').hidden){
+    sess.son=false;passerHorlogeTel(ctx.currentTime);toast("Le son n'a pas démarré. Vérifie que le mode silencieux est enlevé, puis recommence.",8000)}
+  if(!sess.son||!G||!ctx)return;
+  const n=ctx.currentTime,H=n+3,stop=sess.end+12;
+  while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
+  // la musique repart de son début au moment où elle entre (3e cycle)
+  if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+MUS_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=MUS_OFF}catch(e){}}
+  // les cigales s'effacent pendant le 3e cycle avant la fin
+  if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
+    // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
+    [['re5',.2],['si4',2.8],['sol4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
+    // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
+    G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
+    G.out.gain.setValueAtTime(1,e+FIN_ECRAN);G.out.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6)}
+  if(sess.endDone&&!sess.mediasFin&&n>sess.end+FIN_ECRAN+7){sess.mediasFin=true;pauserMedias()}
+}
+setInterval(()=>{try{tick()}catch(e){toast('Erreur : '+e.message,8000)}},60);
+
+function arreter(){
+  if(sess&&sess.wake){try{sess.wake.release()}catch(e){}}
+  pauserMedias();
+  if(G&&ctx){const g=G,t=ctx.currentTime;g.out.gain.setValueAtTime(g.out.gain.value,t);g.out.gain.linearRampToValueAtTime(0,t+.4);
+    // les fichiers longs sont débranchés tout de suite : une nouvelle séance (outil « aller à ») les rebranche aussitôt
+    Object.values(MEDIA).forEach(m=>{try{m.src&&m.src.disconnect()}catch(e){}});
+    setTimeout(()=>{g.srcs.forEach(s=>{try{s.stop()}catch(e){}});try{g.out.disconnect()}catch(e){}},700)}
+  G=null;sess=null;clock.pauseAt=null;
+}
+
+/* ---------- Pause ---------- */
+function ouvrirPause(){if(!sess||sess.fin)return;$('pause').hidden=false;const el=Math.max(0,now()-sess.t0);
+  $('pauseOu').textContent=mmss(Math.min(el,sess.total))+' sur '+mmss(sess.total);
+  const ar=$('allerR');ar.max=String(Math.max(0,sess.total-10));ar.value=String(Math.round(el/5)*5);$('allerTxt').textContent=mmss(+ar.value);
+  if(clock.audio){pauserMedias();if(ctx&&ctx.state==='running')ctx.suspend()}else clock.pauseAt=performance.now()/1000}
+function reprendre(){$('pause').hidden=true;if(clock.audio){if(ctx){const r=ctx.resume();if(r&&r.catch)r.catch(()=>{})}if(sess&&sess.son&&!sess.mediasFin)jouerMedias()}else if(clock.pauseAt!=null){clock.base+=performance.now()/1000-clock.pauseAt;clock.pauseAt=null}}
+$('btnPause').addEventListener('click',e=>{e.stopPropagation();ouvrirPause()});
+$('stage').addEventListener('click',e=>{if(!sess||sess.fin)return;if(e.target.closest('.sheet,.round,.btn,.fiche'))return;ouvrirPause()});
+$('btnReprendre').addEventListener('click',e=>{e.stopPropagation();reprendre()});
+$('allerR').addEventListener('input',e=>{$('allerTxt').textContent=mmss(+e.target.value)});
+$('btnAller').addEventListener('click',e=>{e.stopPropagation();const v=+$('allerR').value;$('pause').hidden=true;arreter();try{demarrer(v)}catch(err){toast('Erreur : '+err.message,8000)}});
+$('btnStop').addEventListener('click',e=>{e.stopPropagation();reprendre();arreter();montrerFiche()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sess&&!sess.fin&&clock.audio&&ctx&&ctx.state!=='running'&&$('pause').hidden)ouvrirPause()});
+
+/* ---------- Départ et fin ---------- */
+$('btnGo').addEventListener('click',e=>{e.stopPropagation();try{demarrer()}catch(err){toast('Erreur au démarrage : '+err.message,10000)}});
+$('echelle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))});
+$('btnEncore').addEventListener('click',e=>{e.stopPropagation();arreter();montrerFiche()});
+$('btnAccueil').addEventListener('click',e=>{e.stopPropagation();arreter();montrerFiche()});
+function montrerFiche(){$('fiche').hidden=false;$('fin').hidden=true;$('creteG').style.transition='none';$('creteG').style.opacity=1;$('pap').setAttribute('opacity',0);dessinerCrete(-1)}
+
+/* ---------- Les messages doux : mot après mot, puis ils s'effacent ---------- */
+function montrerMessage(i){const dz=$('doux'),g=$('guide');
+  if(i<0){if(!dz.textContent)return;dz.classList.add('sort');setTimeout(()=>{if(sess&&sess.msg<0){dz.textContent='';dz.className='doux'}},1700);setTimeout(()=>{if(sess&&sess.msg<0)g.style.opacity=1},900);return}
+  g.style.opacity=0;ecrireDoux(MESSAGES[i].texte)}
+function ecrireDoux(texte,entier){const dz=$('doux');dz.className='doux';dz.textContent='';
+  if(entier){dz.className='doux entier';dz.textContent=texte;return}
+  texte.split(' ').forEach((m,k)=>{const s=document.createElement('span');s.textContent=m;s.style.animationDelay=(.5+k*.16).toFixed(2)+'s';dz.appendChild(s);dz.appendChild(document.createTextNode(' '))})}
+
+/* ---------- Image ---------- */
+/* ---------- Lac de lune : l'orbite de l'app (même géométrie, mêmes couleurs que Orbite.tsx et PointLumineux.tsx) ---------- */
+// Un cercle autour de la lune, découpé en un arc par phase (crème, doré, crème), chacun à la taille de sa phase. Le point
+// lumineux en fait le tour en un cycle, en laissant un trait clair derrière lui depuis le début de la phase en cours ;
+// pendant la rétention, un petit anneau se remplit autour de lui.
+const ORB={cx:390*.7,cy:844*.26,r:78},ECART=.07,RAYON_ANNEAU=19;
+const DEBUTS=S.map((_,k)=>S.slice(0,k).reduce((t,g)=>t+g.d,0));
+const ptO=a=>`${(ORB.cx+ORB.r*Math.cos(a)).toFixed(2)},${(ORB.cy+ORB.r*Math.sin(a)).toFixed(2)}`;
+const arcO=(a0,a1)=>`M${ptO(a0)} A${ORB.r},${ORB.r} 0 ${a1-a0>Math.PI?1:0} 1 ${ptO(a1)}`;
+const angleO=avant=>-Math.PI/2+(avant/T)*2*Math.PI;
+S.forEach((g,k)=>$('orbA'+k).setAttribute('d',arcO(angleO(DEBUTS[k])+ECART,angleO(DEBUTS[k]+g.d)-ECART)));
+function anneauO(x,y,p){const n=Math.max(1,Math.ceil(48*p));let d=`M${x.toFixed(2)},${(y-RAYON_ANNEAU).toFixed(2)}`;
+  for(let i=1;i<=n;i++){const a=-Math.PI/2+2*Math.PI*p*(i/n);d+=` L${(x+RAYON_ANNEAU*Math.cos(a)).toFixed(2)},${(y+RAYON_ANNEAU*Math.sin(a)).toFixed(2)}`}return d}
+function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),t=sec<0?0:s.p*s.g.d;
+  const a0=angleO(DEBUTS[s.k])+ECART,a=angleO(DEBUTS[s.k]+t),x=ORB.cx+ORB.r*Math.cos(a),y=ORB.cy+ORB.r*Math.sin(a);
+  $('orbTrace').setAttribute('d',sec<0?'':arcO(a0,Math.max(a0,a)));
+  ['halo','point'].forEach(id=>{$(id).setAttribute('cx',x.toFixed(2));$(id).setAttribute('cy',y.toFixed(2))});
+  const p=sec>=0&&s.g.n==='Retiens'?s.p:-1;$('bague').setAttribute('d',anneauO(x,y,Math.max(0,p)));$('bague').setAttribute('opacity',p>0?.95:0)}
+
+/* ---------- L'éclipse (Julien, 19 nov.) ---------- */
+// La lune est pleine au début ; l'ombre de la Terre glisse lentement sur elle pendant toute la séance (quelle que soit sa durée)
+// et la recouvre entièrement à la fin. La partie dans l'ombre reste à peine visible, d'un brun-rouge très sombre, comme lors
+// d'une vraie éclipse ; le halo s'atténue à mesure qu'elle est recouverte.
+const ECLIPSE=(function(){const sc=$('scene'),g=sc.querySelector('.pfsun');if(!g)return null;const cs=[...g.querySelectorAll('circle')];
+  const disque=cs[3],NS='http://www.w3.org/2000/svg';if(!disque)return null;
+  cs.slice(4).forEach(c=>c.remove());   // l'ombre du croissant de l'app : la lune est pleine
+  const cx=+disque.getAttribute('cx'),cy=+disque.getAttribute('cy'),r=+disque.getAttribute('r');
+  const cp=document.createElementNS(NS,'clipPath');cp.id='disqueLune';const c=document.createElementNS(NS,'circle');
+  [['cx',cx],['cy',cy],['r',r]].forEach(([k,v])=>c.setAttribute(k,v));cp.appendChild(c);
+  let defs=sc.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');sc.insertBefore(defs,sc.firstChild)}defs.appendChild(cp);
+  const ombre=document.createElementNS(NS,'circle');[['r',(r*1.25).toFixed(2)],['fill','#2b2130'],['opacity',.9],['clip-path','url(#disqueLune)']].forEach(([k,v])=>ombre.setAttribute(k,v));
+  disque.after(ombre);
+  // le reflet de la lune sur le lac pâlit avec elle
+  const refl=[...sc.querySelectorAll('[transform]')].find(e=>e!==g&&/^translate\(273/.test(e.getAttribute('transform')||''));
+  return{ombre,cx,cy,r,R:r*1.25,refl,anneaux:cs.slice(0,3).map(a=>({a,o:+a.getAttribute('opacity')}))}})();
+const adoucir=x=>x*x*(3-2*x);
+function eclipse(p){if(!ECLIPSE)return;const e=adoucir(clamp(p)),d=(ECLIPSE.r+ECLIPSE.R)*(1-e);
+  ECLIPSE.ombre.setAttribute('cx',(ECLIPSE.cx-.88*d).toFixed(2));ECLIPSE.ombre.setAttribute('cy',(ECLIPSE.cy-.49*d).toFixed(2));
+  ECLIPSE.anneaux.forEach(({a,o})=>a.setAttribute('opacity',(o*(1-.7*e)).toFixed(3)));
+  if(ECLIPSE.refl)ECLIPSE.refl.setAttribute('opacity',(1-.8*e).toFixed(3))}
+eclipse(0);
+
+/* ---------- La musique dure jusqu'au bout (même réglage que les autres lieux) ---------- */
+const DUREE_MUSIQUE=600;
+function regleMusique(total){const el=MEDIA.musique.el;sess.vitMus=Math.min(1,(DUREE_MUSIQUE-MUS_OFF)/(total+FIN_MUSIQUE+4.2));
+  try{el.preservesPitch=true;el.webkitPreservesPitch=true;el.mozPreservesPitch=true}catch(e){}el.playbackRate=sess.vitMus}
+
+function fondu(el){el.style.transition='none';el.style.opacity=.35;void el.offsetWidth;el.style.transition='opacity .6s ease';el.style.opacity=1}
+const reduit=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   // une fois par minute : 16 s, 1 min 16, 2 min 16…
+  if(reduit||p<0||p>1){P.setAttribute('opacity',0);return}
+  const x=-30+p*450,y=372+Math.sin(p*Math.PI*3.2)*22-Math.sin(p*Math.PI)*30,r=Math.cos(p*Math.PI*3.2)*12;
+  P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
+  $('papAiles').setAttribute('transform',`scale(${(.25+.75*Math.abs(Math.cos(el*11))).toFixed(2)} 1)`)}
+
+const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUSIQUE=FIN_FONDU+5,FIN_ECRAN=FIN_MUSIQUE+3;   // l'écran de fin arrive 3 s après la fin de la musique (Julien, 18 nov., tous les lieux)
+// La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
+const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
+function frame(){
+  requestAnimationFrame(frame);
+  if(!sess)return;
+  const el=now()-sess.t0;
+  const word=$('word'),count=$('count'),guide=$('guide');
+  if(el<0){
+    const n=Math.min(3,Math.ceil(-el));const key='c'+n;
+    if(sess.lastWord!==key){sess.lastWord=key;word.textContent=n;word.classList.add('chiffre');count.hidden=true;fondu(word);guide.textContent='Installe-toi, on commence…'}
+    dessinerCrete(-1);
+  }else if(el<sess.total){
+    const s=at(el);const key=s.g.n==='Pause'?'pause'+s.k:MOTS[s.g.pill]+s.k;
+    word.classList.remove('chiffre');count.hidden=false;
+    if(sess.lastWord!==key){sess.lastWord=key;
+      if(s.g.n==='Pause'){word.textContent=MOTS[s.g.pill];word.style.transition='opacity .5s';word.style.opacity=.35;count.style.transition='opacity .5s';count.style.opacity=.35}
+      else{word.textContent=MOTS[s.g.pill];fondu(word);fondu(count)}}
+    count.textContent=s.g.n==='Pause'?'1':String(s.left);
+    if(guide.textContent!==GUIDE[s.g.pill])guide.textContent=GUIDE[s.g.pill];
+    const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
+    if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1);$('ph2').classList.toggle('on',s.g.pill===2)}
+    dessinerCrete(Math.max(0,el-.001));eclipse(el/sess.total);
+  }else if(!sess.fin){eclipse(1);
+    // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
+    sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
+    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
+    ecrireDoux(MESSAGE_FIN,true);
+  }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
+    sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
+    const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
+    if(sess.wake){try{sess.wake.release()}catch(e){}}
+  }
+  $('fill').style.width=(clamp(el/sess.total)*100).toFixed(2)+'%';$('time').textContent=mmss(clamp(el/sess.total)*sess.total);
+}
+dessinerCrete(-1);requestAnimationFrame(frame);
+if(location.search.indexOf('debug')>=0){const d=document.createElement('div');d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99;font:12px/16px system-ui;color:#222;background:rgba(255,255,255,.9);border-radius:8px;padding:6px 8px;pointer-events:none';document.body.appendChild(d);
+  gongsCharges.then(()=>{DIAG.fichiers='ok'},e=>{DIAG.fichiers='erreur';DIAG.err=String(e&&e.message||e)});
+  setInterval(()=>{const c=MEDIA.musique&&MEDIA.musique.el;d.textContent='Test · son : '+(ctx?ctx.state+' '+ctx.sampleRate+' Hz':'pas encore')+' · fichiers gong : '+(DIAG.fichiers||'en cours')+' · gongs prêts : '+Object.keys(GONGS).length+'/3 · frappes : '+DIAG.frappes+' (dernière : '+DIAG.derniere+')'+(DIAG.manque?' · manqués : '+DIAG.manque:'')+' · musique : '+(c?(c.paused?'arrêtées':'en lecture'):'—')+(DIAG.err?' · ERREUR : '+DIAG.err:'')},500)}
+if(location.search.indexOf('debug')>=0)window.__ondo={frame,tick,now,clock,MEDIA,GONGS,get sess(){return sess},get ctx(){return ctx},get G(){return G}};
+})();
+</script>
+</body>
+</html>
