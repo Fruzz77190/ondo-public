@@ -720,8 +720,9 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.338,cigales:.495,gong:.537};   // mesurés dans la séance : musique, cigales et gong au même niveau (±0,6 dB), le vent 2 dB dessous
+const NIV={musique:.338,cigales:.495,gong:.513};   // mesurés dans la séance : musique, cigales et gong au même niveau (±0,6 dB), le vent 2 dB dessous
 // Gong accordé à la musique (ré majeur) : La à l'inspire, Ré à l'expire ; La, Fa dièse, Ré pour la fin.
+// Le gong d'origine montait en 5 s : il est remis à pleine force dès la frappe, sinon la musique (qui joue les mêmes notes) le cachait.
 const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');media('cigales');
