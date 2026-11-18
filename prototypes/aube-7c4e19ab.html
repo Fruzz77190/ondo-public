@@ -389,16 +389,16 @@ const MOTS=['Inspire','Expire'];
 const GUIDE=['Gonfle doucement le ventre…','Relâche, tout doucement…'];
 // Les messages doux, écrits seulement : chacun reste 10 secondes, dans tous les lieux (Julien, 18 nov. 2026).
 const MESSAGES=[
-  {de:60,a:70,texte:'Si tu veux, ferme les yeux et laisse le gong te guider.'},
-  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
+  {de:60,a:70,texte:'Ferme les yeux si tu veux, suis le gong'},
+  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider'},
   // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
-  {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
-  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose.'},
-  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer."},
-  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens au son du gong."},
-  {de:420,a:430,texte:"Chaque inspiration t'apporte un peu plus de calme."},
-  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise."},
-  {de:540,a:550,texte:'Encore quelques respirations, savoure ce moment.'}
+  {de:180,a:190,texte:"Chaque expiration t'allège un peu plus"},
+  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose'},
+  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer"},
+  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens au gong"},
+  {de:420,a:430,texte:"Chaque inspiration t'apporte du calme"},
+  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise"},
+  {de:540,a:550,texte:'Encore un peu, savoure ce moment'}
 ];
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -632,7 +632,7 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
 
 const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
 // La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
-const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
+const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi";
 /* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
 // Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
 const VOL_COUL='#b4583a';
@@ -679,15 +679,16 @@ function vol(el){
 
 /* ---------- Aube : les phrases sous le soleil, sur une seule ligne, sans encadré (Julien, 18 nov.) ---------- */
 // La place suit le dessin : juste sous le disque du soleil, quelle que soit la taille de l'écran.
-// Le texte se règle pour tenir sur une ligne (17 px au plus, 13 px au moins) ; une phrase trop longue passe sur deux lignes.
+// Toutes les phrases en 19 px (Julien, 18 nov.) ; sur un écran plus étroit, le texte se réduit juste assez pour tenir sur une ligne
+// (15 px au moins) ; au-delà, il passerait sur deux lignes.
 function placerDoux(){try{const sc=$('scene'),d=sc.querySelectorAll('.pfsun circle')[3];if(!d)return;
   const p=sc.createSVGPoint();p.x=0;p.y=+d.getAttribute('cy')+(+d.getAttribute('r'))+14;
   document.documentElement.style.setProperty('--douxY',Math.round(p.matrixTransform(sc.getScreenCTM()).y)+'px')}catch(e){}}
-function ajusterDoux(){const dz=$('doux');dz.classList.remove('deuxLignes');dz.style.setProperty('--douxTaille','17px');
+function ajusterDoux(){const dz=$('doux');dz.classList.remove('deuxLignes');dz.style.setProperty('--douxTaille','19px');
   if(!dz.textContent.trim())return;
   const r=document.createRange();r.selectNodeContents(dz);const w=r.getBoundingClientRect().width,dispo=window.innerWidth-28;
-  const taille=Math.min(17,17*dispo/Math.max(1,w));
-  if(taille<13){dz.classList.add('deuxLignes');dz.style.setProperty('--douxTaille','14px')}else dz.style.setProperty('--douxTaille',taille.toFixed(1)+'px')}
+  const taille=Math.min(19,19*dispo/Math.max(1,w));
+  if(taille<15){dz.classList.add('deuxLignes');dz.style.setProperty('--douxTaille','15px')}else dz.style.setProperty('--douxTaille',taille.toFixed(1)+'px')}
 const ecrireDouxBase=ecrireDoux;
 ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerDoux();ajusterDoux()};
 placerDoux();addEventListener('resize',()=>{placerDoux();ajusterDoux()});
