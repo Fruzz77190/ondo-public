@@ -565,7 +565,7 @@ function tick(){
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['fa5',.2],['re5',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['fa5',.2],['re5',2.8],['do5',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
