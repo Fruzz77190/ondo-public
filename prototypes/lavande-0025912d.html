@@ -695,13 +695,13 @@ const GUIDE=['Inspire doucement…','Expire lentement, comme le vent dans la lav
 const MESSAGES=[
   {de:60,a:60+2*T,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
   {de:120,a:140,texte:'Tu fais ça très bien. Continue à ton rythme.'},
-  // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (proposées le 18 nov., à valider par Julien)
+  // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
   {de:180,a:200,texte:"Laisse chaque expiration t'alléger un peu plus."},
   {de:240,a:260,texte:'Ton souffle ralentit, ton corps se pose.'},
   {de:300,a:320,texte:"Il n'y a rien d'autre à faire que respirer."},
   {de:360,a:380,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
   {de:420,a:440,texte:"Chaque inspiration t'apporte un peu plus de calme."},
-  {de:480,a:500,texte:'Relâche tes épaules, ta mâchoire, ton front.'},
+  {de:480,a:500,texte:"Ton corps se détend, ton esprit s'apaise."},
   {de:540,a:560,texte:'Encore quelques respirations, savoure ce moment.'}
 ];
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
@@ -728,7 +728,8 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.239,cigales:.393,gong:.513};   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
+const NIV={musique:.239,cigales:.393,gong:.725};   // gong +3 dB (Julien, 18 nov. : pas assez présent quand la musique arrive)
+//   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // À 1 minute, les cigales s'effacent pendant que la musique arrive (fondu sur une respiration, 14 s).
 const AVEC_MUSIQUE=true,FONDU_DE=60,FONDU_DUREE=T;
 const LONGS=AVEC_MUSIQUE?['cigales','musique']:['cigales'];
