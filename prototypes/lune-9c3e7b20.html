@@ -372,8 +372,8 @@ $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if
 let SC=null;
 const pleineLune=svg=>{const g=svg.querySelector('.pfsun');if(g)[...g.querySelectorAll('circle')].slice(4).forEach(c=>c.remove())};
 try{SC=pfScene($('scene'),'lac',{w:390,h:844,seed:4});SC.breathe(.85);
-  pfScene($('sceneFiche'),'lac',{w:390,h:270,seed:4}).breathe(.85);pleineLune($('sceneFiche'));
-  pfScene($('sceneApres'),'lac',{w:390,h:190,seed:4}).breathe(.85);pleineLune($('sceneApres'))}catch(e){toast('Paysage : '+e.message,8000)}
+  pfScene($('sceneFiche'),'lac',{w:390,h:270,seed:4}).breathe(.85);
+  pfScene($('sceneApres'),'lac',{w:390,h:190,seed:4}).breathe(.85);}catch(e){toast('Paysage : '+e.message,8000)}
 
 /* ---------- Le rythme : inspire 4 s, retiens 5 s, expire 6 s (respiration 4-5-6 de l'app) ---------- */
 const ease=x=>(1-Math.cos(Math.PI*x))/2;
@@ -631,9 +631,7 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),t=sec<0?0:s.p*s.g.d
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',x.toFixed(2));$(id).setAttribute('cy',y.toFixed(2))});
   const p=sec>=0&&s.g.n==='Retiens'?s.p:-1;$('bague').setAttribute('d',anneauO(x,y,Math.max(0,p)));$('bague').setAttribute('opacity',p>0?.95:0)}
 
-/* ---------- La lune ne change pas pendant la séance (Julien, 19 nov.) ---------- */
-// Pleine, comme sur la miniature de la fiche : on enlève l'ombre du croissant de l'app.
-(function(){const g=$('scene').querySelector('.pfsun');if(g)[...g.querySelectorAll('circle')].slice(4).forEach(c=>c.remove())})();
+/* ---------- La lune ne change pas pendant la séance (Julien, 19 nov.) : le croissant de l'app, tel quel ---------- */
 
 /* ---------- La cheminée de la maison fume, à partir d'1 minute (Julien, 19 nov.) ---------- */
 // Même dessin que le lac des cimes : une petite cheminée de la couleur de la maison, trois volutes qui montent et s'effacent
