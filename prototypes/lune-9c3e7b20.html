@@ -648,12 +648,27 @@ const FUMEE=(function(){const sc=$('scene'),cab=[...sc.querySelectorAll('path')]
   cab.parentNode.insertBefore(ch,cab);
   const vol=[0,1,2].map(()=>{const p=document.createElementNS(NS,'path');[['fill','none'],['stroke','#d8dcec'],['stroke-linecap','round']].forEach(([k,v])=>p.setAttribute(k,v));cab.parentNode.insertBefore(p,cab.nextSibling);return p});
   return{x:hx+5.7,y:hy-24,s:.75,vol,niv:0}})();
-function animerFumee(t){if(!FUMEE)return;const{x,y,s}=FUMEE;
+function animerFumee(t){animerLumieres(t);if(!FUMEE)return;const{x,y,s}=FUMEE;
   FUMEE.vol.forEach((p,k)=>{const q=(t/6+k/3)%1,bas=y-q*26*s,ecart=Math.sin(t*.7+k*2.1)*3*s*q,ond=6*s*(.6+.4*Math.sin(t*.9+k*1.3)),h=12*s*(.7+.3*q);
     p.setAttribute('d',`M${(x+ecart).toFixed(2)},${bas.toFixed(2)} q${(-ond).toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)} q${ond.toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)}`);
     p.setAttribute('stroke-width',(3*s*(1-.35*q)).toFixed(2));p.setAttribute('opacity',(.75*FUMEE.niv*Math.sin(Math.PI*q)).toFixed(3))})}
 function fumee(el){if(!FUMEE)return;FUMEE.niv=el<60?0:Math.min(1,(el-60)/8)}
 animerFumee(0);
+
+/* ---------- Des lumières qui clignotent et se baladent doucement dans le ciel (Julien, 19 nov.) ---------- */
+// Sept petites lumières (un cœur crème et un halo bleuté) dérivent lentement de gauche à droite en ondulant, chacune à son
+// rythme (2 à 5 points par seconde), et clignotent doucement : elles s'allument, brillent, puis s'éteignent presque.
+var LUMIERES=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',g=document.createElementNS(NS,'g');g.setAttribute('pointer-events','none');
+  const nuages=sc.querySelector('.pfclouds');if(nuages)nuages.before(g);else sc.appendChild(g);
+  let g0=7;const rnd=()=>{g0=(g0*16807)%2147483647;return g0/2147483647};
+  return [...Array(7)].map((_,i)=>{const h=document.createElementNS(NS,'circle'),c=document.createElementNS(NS,'circle');
+    [['r',5.5],['fill','#cfe0ff']].forEach(([k,v])=>h.setAttribute(k,v));[['r',1.7],['fill','#fff3d6']].forEach(([k,v])=>c.setAttribute(k,v));g.append(h,c);
+    return{h,c,x0:rnd()*390,y:40+rnd()*400,v:2+rnd()*3,amp:8+rnd()*14,fo:.05+rnd()*.06,ph:rnd()*6.28,fb:.35+rnd()*.45,pb:rnd()*6.28}})})();
+function animerLumieres(t){if(!LUMIERES)return;LUMIERES.forEach(L=>{const x=((L.x0+t*L.v)%430+430)%430-20,y=L.y+Math.sin(t*L.fo*6.28+L.ph)*L.amp;
+  const b=Math.pow(Math.max(0,Math.sin(t*L.fb+L.pb)),2),o=.12+.88*b;
+  [L.h,L.c].forEach(e=>{e.setAttribute('cx',x.toFixed(1));e.setAttribute('cy',y.toFixed(1))});
+  L.c.setAttribute('opacity',o.toFixed(3));L.h.setAttribute('opacity',(.28*o).toFixed(3))})}
+animerLumieres(0);
 
 /* ---------- Une étoile filante toutes les 30 secondes (Julien, 19 nov.) ---------- */
 // Un trait fin qui file en diagonale et s'efface en 1,4 s, tour à tour à gauche et au milieu du ciel (loin de l'orbite et
