@@ -681,6 +681,12 @@ const SOIR=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',kids=
   // les étoiles, derrière les nuages et le soleil (juste après les bandes du ciel)
   const ge=document.createElementNS(NS,'g');ge.setAttribute('pointer-events','none');
   if(ciel.length)ciel[ciel.length-1].after(ge);
+  // deux étoiles filantes dans les 20 dernières secondes (Julien, 19 nov.) : un trait fin qui file en diagonale et s'efface
+  // la traînée est faite de 5 petits segments, du plus pâle (queue) au plus lumineux (tête)
+  const filantes=[{avant:17,x:385,y:175,dx:-.6,dy:.8,L:120},{avant:8,x:120,y:160,dx:-.6,dy:.8,L:110}].map(f=>{
+    const seg=[0,1,2,3,4].map(i=>{const l=document.createElementNS(NS,'line');
+      [['stroke','#fff9f3'],['stroke-width',(1+i*.25).toFixed(2)],['stroke-linecap','round'],['opacity',0]].forEach(([k,v])=>l.setAttribute(k,v));ge.appendChild(l);return l});
+    return{...f,seg,duree:1.4}});
   let g0=11;const rnd=()=>{g0=(g0*16807)%2147483647;return g0/2147483647};
   const etoiles=[];for(let i=0;i<16;i++){const c=document.createElementNS(NS,'circle'),r=.9+rnd()*1.1;
     [['cx',(12+rnd()*366).toFixed(1)],['cy',(24+Math.pow(rnd(),1.4)*250).toFixed(1)],['r',r.toFixed(2)],['fill','#fff9f3'],['opacity',0]].forEach(([k,v])=>c.setAttribute(k,v));
@@ -690,7 +696,7 @@ const SOIR=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',kids=
   let refl=null;if(fen){const x=+fen.getAttribute('x')+3.5;refl=[0,1,2].map(k=>{const r=document.createElementNS(NS,'rect');
     [['x',x-(6-k*1.6)],['y',527+k*4.2],['width',12-k*3.2],['height',1.6],['rx',.8],['fill','#ffd27a'],['opacity',0]].forEach(([a,v])=>r.setAttribute(a,v));
     (lacEl||fen).after(r);return{r,x,w:12-k*3.2}})}
-  return{bandes,halos,lac,etoiles,fen,halo,refl,nuit:hex('#b2614a'),jour:hex('#ffd27a')}})();
+  return{bandes,halos,lac,etoiles,filantes,fen,halo,refl,nuit:hex('#b2614a'),jour:hex('#ffd27a')}})();
 const melange=(a,b,t)=>'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
 const doux01=x=>{x=clamp(x);return x*x*(3-2*x)};
 function soir(p,lvl,el){const t=performance.now()/1000;
@@ -699,6 +705,12 @@ function soir(p,lvl,el){const t=performance.now()/1000;
   if(SOIR.lac)SOIR.lac.e.setAttribute('fill',melange(SOIR.lac.a,SOIR.lac.b,c*.7));
   SOIR.etoiles.forEach(e=>{const v=doux01((p-e.seuil)/.08);
     e.c.setAttribute('opacity',(v*e.max*(.72+.18*lvl+.1*Math.sin(t*e.vit+e.ph))).toFixed(3))});
+  SOIR.filantes.forEach(f=>{const k=sess&&el!=null?(el-(sess.total-f.avant))/f.duree:-1;
+    if(k<0||k>1){f.seg.forEach(l=>l.setAttribute('opacity',0));return}
+    const d=f.L*(1-Math.pow(1-k,2)),hx=f.x+f.dx*d,hy=f.y+f.dy*d,q=Math.min(d,46*Math.sin(Math.PI*Math.min(1,k*1.4))),o=.9*Math.sin(Math.PI*k);
+    f.seg.forEach((l,i)=>{const a=q*(1-i/5),b=q*(1-(i+1)/5);
+      [['x1',hx-f.dx*a],['y1',hy-f.dy*a],['x2',hx-f.dx*b],['y2',hy-f.dy*b]].forEach(([n,v])=>l.setAttribute(n,v.toFixed(1)));
+      l.setAttribute('opacity',(o*(.15+.85*(i+1)/5)).toFixed(3))})});
   const m=sess&&el!=null?el/sess.total:0;if(FUMEE)FUMEE.niv=doux01((m-.5)/.12);
   if(SOIR.fen){const l=doux01((m-.5)/.25),f=1+.06*Math.sin(t*2.3)+.04*Math.sin(t*5.1);
     SOIR.fen.setAttribute('fill',melange(SOIR.nuit,SOIR.jour,l));
@@ -714,7 +726,10 @@ function placerDoux(){try{const sc=$('scene'),m=sc.getScreenCTM(),pt=y=>{const p
   // la position du soleil à cet instant précis (et non celle de l'image précédente)
   const off=sess?SOLEIL.descente*avanceSoleil(now()-sess.t0):coucherActuel;
   // toujours juste au-dessus du disque du soleil (Julien, 19 nov.), la phrase de guidance s'efface pendant ce temps
-  const dz=$('doux'),h=dz.getBoundingClientRect().height||52,y=pt(SOLEIL.cy-SOLEIL.r+off-14)-h;
+  let y=pt(SOLEIL.cy-SOLEIL.r+off-14);
+  // les phrases de 7, 8 et 9 min (Julien, 19 nov.) : plus haut, au-dessus de tous les sommets (le plus haut est à 386)
+  const msg=sess&&sess.msg>=0?MESSAGES[sess.msg]:null;if(msg&&msg.de>=420)y=Math.min(y,pt(386-22));
+  const dz=$('doux'),h=dz.getBoundingClientRect().height||52;y-=h;
   document.documentElement.style.setProperty('--douxY',Math.round(y)+'px')}catch(e){}}
 const ecrireDouxBase=ecrireDoux;
 ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerDoux()};
