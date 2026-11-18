@@ -728,7 +728,8 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.239,cigales:.393,gong:.906};   // gong +3 dB puis +25 % (Julien, 18 nov.)
+const NIV={musique:.239,cigales:.314,gong:.906};   // cigales -20 % (Julien, 18 nov.)
+//   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // À 1 minute, les cigales s'effacent pendant que la musique arrive (fondu sur une respiration, 14 s).
 const AVEC_MUSIQUE=true,FONDU_DE=60,FONDU_DUREE=T;
@@ -773,7 +774,9 @@ function build(t0){
   const rs=ctx.createBufferSource();rs.buffer=pink;rs.loop=true;rs.playbackRate.value=.9;
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
-  g.ventNiv=1.58;   // vent baissé de 50 % (Julien, 18 nov.)
+  // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
+  g.ventAvant=1.58*.8;g.ventApres=1.58*.8*1.1;
+  g.ventNiv=t=>{const a=t0+FONDU_DE,b=a+FONDU_DUREE;return t<=a?g.ventAvant:t>=b?g.ventApres:g.ventAvant+(g.ventApres-g.ventAvant)*(t-a)/(b-a)};
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+FONDU_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+FONDU_DE+FONDU_DUREE);
@@ -835,9 +838,10 @@ function demarrer(){
 function planifier(g,w,k){
   const l0=g.a,l1=g.b;
   // le vent suit le souffle, discret
-  follow(G.wind.gain,w,g.d,(.03+.06*l0)*G.ventNiv,(.03+.06*l1)*G.ventNiv);
+  const v0=G.ventNiv(w),v1=G.ventNiv(w+g.d);
+  follow(G.wind.gain,w,g.d,(.03+.06*l0)*v0,(.03+.06*l1)*v1);
   follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1);
-  follow(G.rustle.gain,w,g.d,(.004+.007*l0)*G.ventNiv,(.004+.007*l1)*G.ventNiv);
+  follow(G.rustle.gain,w,g.d,(.004+.007*l0)*v0,(.004+.007*l1)*v1);
   // le gong entre au 4e cycle (une respiration après la musique) : La au début de l'inspire, Ré au début de l'expire
   if(Math.floor(k/S.length)>=3&&(g.n==='Inspire'||g.n==='Expire')){
     const suivante=w+g.d+S[(k+1)%S.length].d;try{frapper(g.n==='Inspire'?'la':'re',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
