@@ -728,7 +728,8 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.239,cigales:.314,gong:.906};   // cigales -20 % (Julien, 18 nov.)
+const NIV={musique:.239,cigales:.157,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
+//   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // À 1 minute, les cigales s'effacent pendant que la musique arrive (fondu sur une respiration, 14 s).
@@ -813,7 +814,7 @@ let sess=null;
 function demarrer(){
   // 1. L'écran passe tout de suite à la séance, sans attendre le son.
   $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
-  $('creteG').style.transition='none';$('creteG').style.opacity=1;
+  $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1});
   const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;
   // 2. Le son : créé et réveillé pendant le toucher (obligatoire sur iPhone).
   let son=true;
@@ -861,7 +862,7 @@ function tick(){
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
     [['la',.2],['fad',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
-    G.mus.f.gain.setValueAtTime(1,e);G.mus.f.gain.linearRampToValueAtTime(0,e+7);
+    G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     G.sons.f.gain.setValueAtTime(1,e+5);G.sons.f.gain.linearRampToValueAtTime(0,e+15)}
   if(sess.endDone&&!sess.mediasFin&&n>sess.end+16){sess.mediasFin=true;pauserMedias()}
 }
@@ -913,6 +914,7 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
   P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
   $('papAiles').setAttribute('transform',`scale(${(.25+.75*Math.abs(Math.cos(el*11))).toFixed(2)} 1)`)}
 
+const FIN_ELEMENTS=['phaseBox','bas','btnPause'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
 function frame(){
   requestAnimationFrame(frame);
   if(!sess)return;
@@ -934,8 +936,13 @@ function frame(){
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1)}
     dessinerCrete(Math.max(0,el-.001));papillon(el);
   }else if(!sess.fin){
-    sess.fin=true;$('phaseBox').hidden=true;$('bas').hidden=true;$('btnPause').hidden=true;$('creteG').style.transition='opacity 1.6s';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
-    $('fin').hidden=false;if(sess.wake){try{sess.wake.release()}catch(e){}}
+    // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
+    sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
+    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
+  }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
+    sess.ecranFin=true;FIN_ELEMENTS.forEach(id=>{$(id).hidden=true});
+    const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
+    if(sess.wake){try{sess.wake.release()}catch(e){}}
   }
   $('fill').style.width=(clamp(el/sess.total)*100).toFixed(2)+'%';$('time').textContent=mmss(clamp(el/sess.total)*sess.total);
 }
