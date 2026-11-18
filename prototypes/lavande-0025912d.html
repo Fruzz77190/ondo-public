@@ -92,6 +92,10 @@ button{font-family:inherit;color:inherit}
 .sheet{background:var(--card);border-radius:28px 28px 0 0;padding:10px 20px 28px;box-shadow:0 -10px 40px rgba(46,29,30,.18);display:flex;flex-direction:column;gap:16px}
 .poignee{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 2px}
 .sheet h2{font:800 26px/32px var(--font);margin:0}
+/* outil de test (prototype seulement) : aller directement à un moment de la séance */
+.aller{display:flex;flex-direction:column;gap:10px;border-top:1.5px dashed var(--line);padding-top:14px}
+.aller p{margin:0;font:700 14px/18px var(--font);color:var(--muted)}
+.aller input{width:100%;accent-color:var(--primary)}
 .sous{font:600 15px/22px var(--font);color:var(--muted);margin:2px 0 0}
 .acts2{display:flex;flex-direction:column;gap:10px}
 [hidden]{display:none!important}
@@ -197,6 +201,7 @@ button{font-family:inherit;color:inherit}
         <button class="btn plein" id="btnReprendre">Reprendre</button>
         <button class="btn second" id="btnStop">Terminer la séance</button>
       </div>
+      <div class="aller"><p>Test · aller directement à <b id="allerTxt">0:00</b></p><input type="range" id="allerR" min="0" max="180" step="5" value="0" aria-label="Moment de la séance"><button class="btn second" id="btnAller">Aller à ce moment</button></div>
     </div>
   </div>
 </div>
@@ -717,6 +722,10 @@ function now(){if(clock.audio&&ctx)return ctx.currentTime;const t=clock.pauseAt!
 function passerHorlogeTel(t){clock.audio=false;clock.base=performance.now()/1000-t;clock.pauseAt=null}
 
 /* ---------- Son ---------- */
+// Outil de test « aller à » : la séance peut reprendre avant le zéro de l'horloge du son ; un réglage tombé dans le passé
+// est alors simplement appliqué tout de suite (le navigateur refuse les temps négatifs).
+[['setValueAtTime',1],['linearRampToValueAtTime',1],['exponentialRampToValueAtTime',1],['setTargetAtTime',1],['cancelScheduledValues',0]].forEach(([m,i])=>{
+  const f=AudioParam.prototype[m];if(!f)return;AudioParam.prototype[m]=function(...a){if(a[i]<0)a[i]=0;return f.apply(this,a)}});
 function noiseBuf(kind,sec){const sr=ctx.sampleRate,n=Math.floor(sr*sec),b=ctx.createBuffer(2,n,sr);
   for(let c=0;c<2;c++){const d=b.getChannelData(c);let l=0,b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
     for(let i=0;i<n;i++){const w=Math.random()*2-1;
@@ -805,7 +814,9 @@ function frapper(nom,w,suivante,dest,niv=1,finPhase){const b=GONGS[nom];if(!b||!
     [[.25,.146],[.5,.5],[.75,.854],[1,1]].forEach(([dt,p])=>g.linearRampToValueAtTime(L*(1-(1-H)*p),F-1+dt));
     g.linearRampToValueAtTime(L*P,suivante);
     [[.4,.5625],[.8,.25],[1.2,.0625],[1.6,0]].forEach(([dt,q])=>g.linearRampToValueAtTime(L*P*q,suivante+dt))}
-  s.connect(e).connect(dest||G.gong);s.start(w);if(suivante)s.stop(suivante+1.7);G.srcs.push(s)}
+  s.connect(e).connect(dest||G.gong);const n0=ctx.currentTime;
+  if(w<n0){if(n0-w>b.duration-.2)return;s.start(n0,n0-w)}else s.start(w);
+  if(suivante)s.stop(suivante+1.7);G.srcs.push(s)}
 function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Math.random()*1.4-.7;o.connect(p).connect(G.ventOn)}else o.connect(G.ventOn);const s=ctx.createGain();s.gain.value=.5;o.connect(s).connect(G.oisRevOn);
   const n=2+Math.floor(Math.random()*4),f0=2500+Math.random()*1300,up=Math.random()<.6;let t=w;
   for(let i=0;i<n;i++){const d=.07+Math.random()*.08;const x=ctx.createOscillator();x.type='sine';const a=f0*(1+(Math.random()-.5)*.15);
@@ -814,7 +825,7 @@ function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Mat
 
 /* ---------- Séance ---------- */
 let sess=null;
-function demarrer(){
+function demarrer(depart=0){
   // 1. L'écran passe tout de suite à la séance, sans attendre le son.
   $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
   $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1;$(id).hidden=false});$('count').hidden=true;
@@ -829,11 +840,15 @@ function demarrer(){
   }catch(e){son=false;toast("Le son n'a pas pu démarrer sur ce téléphone : la séance continue sans le son.",7000)}
   clock.audio=son;clock.pauseAt=null;
   const t=son?ctx.currentTime:0;if(!son)passerHorlogeTel(0);
-  const t0=t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T;
-  sess={t0,total,end:t0+total,cycles,k:0,next:t0,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
+  // depart > 0 (outil de test) : la séance reprend directement à ce moment, sans le décompte
+  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T,c0=Math.floor(depart/T);
+  sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
   if(son){try{G=build(t0);decoderGongs();
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
-      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});jouerMedias()}
+      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});
+      if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
+        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=depart-debutMus;sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
+      jouerMedias()}
     catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
   tick();
@@ -874,18 +889,24 @@ setInterval(()=>{try{tick()}catch(e){toast('Erreur : '+e.message,8000)}},60);
 function arreter(){
   if(sess&&sess.wake){try{sess.wake.release()}catch(e){}}
   pauserMedias();
-  if(G&&ctx){const g=G,t=ctx.currentTime;g.out.gain.setValueAtTime(g.out.gain.value,t);g.out.gain.linearRampToValueAtTime(0,t+.4);setTimeout(()=>{g.srcs.forEach(s=>{try{s.stop()}catch(e){}});Object.values(MEDIA).forEach(m=>{try{m.src&&m.src.disconnect()}catch(e){}});try{g.out.disconnect()}catch(e){}},700)}
+  if(G&&ctx){const g=G,t=ctx.currentTime;g.out.gain.setValueAtTime(g.out.gain.value,t);g.out.gain.linearRampToValueAtTime(0,t+.4);
+    // les fichiers longs sont débranchés tout de suite : une nouvelle séance (outil « aller à ») les rebranche aussitôt
+    Object.values(MEDIA).forEach(m=>{try{m.src&&m.src.disconnect()}catch(e){}});
+    setTimeout(()=>{g.srcs.forEach(s=>{try{s.stop()}catch(e){}});try{g.out.disconnect()}catch(e){}},700)}
   G=null;sess=null;clock.pauseAt=null;
 }
 
 /* ---------- Pause ---------- */
 function ouvrirPause(){if(!sess||sess.fin)return;$('pause').hidden=false;const el=Math.max(0,now()-sess.t0);
   $('pauseOu').textContent=mmss(Math.min(el,sess.total))+' sur '+mmss(sess.total);
+  const ar=$('allerR');ar.max=String(Math.max(0,sess.total-10));ar.value=String(Math.round(el/5)*5);$('allerTxt').textContent=mmss(+ar.value);
   if(clock.audio){pauserMedias();if(ctx&&ctx.state==='running')ctx.suspend()}else clock.pauseAt=performance.now()/1000}
 function reprendre(){$('pause').hidden=true;if(clock.audio){if(ctx){const r=ctx.resume();if(r&&r.catch)r.catch(()=>{})}if(sess&&sess.son&&!sess.mediasFin)jouerMedias()}else if(clock.pauseAt!=null){clock.base+=performance.now()/1000-clock.pauseAt;clock.pauseAt=null}}
 $('btnPause').addEventListener('click',e=>{e.stopPropagation();ouvrirPause()});
 $('stage').addEventListener('click',e=>{if(!sess||sess.fin)return;if(e.target.closest('.sheet,.round,.btn,.fiche'))return;ouvrirPause()});
 $('btnReprendre').addEventListener('click',e=>{e.stopPropagation();reprendre()});
+$('allerR').addEventListener('input',e=>{$('allerTxt').textContent=mmss(+e.target.value)});
+$('btnAller').addEventListener('click',e=>{e.stopPropagation();const v=+$('allerR').value;$('pause').hidden=true;arreter();try{demarrer(v)}catch(err){toast('Erreur : '+err.message,8000)}});
 $('btnStop').addEventListener('click',e=>{e.stopPropagation();reprendre();arreter();montrerFiche()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sess&&!sess.fin&&clock.audio&&ctx&&ctx.state!=='running'&&$('pause').hidden)ouvrirPause()});
 
