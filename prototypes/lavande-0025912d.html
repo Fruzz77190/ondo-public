@@ -42,6 +42,9 @@ button{font-family:inherit;color:inherit}
 .doux span{display:inline-block;opacity:0;filter:blur(6px);transform:translateY(7px);animation:mot 1.3s cubic-bezier(.22,.61,.36,1) forwards}
 .doux.sort{transition:opacity 1.6s ease,filter 1.6s ease;opacity:0;filter:blur(5px)}
 @keyframes mot{to{opacity:1;filter:blur(0);transform:none}}
+/* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
+.doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
+@keyframes entier{to{opacity:1}}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -897,7 +900,8 @@ function montrerFiche(){$('fiche').hidden=false;$('fin').hidden=true;$('creteG')
 function montrerMessage(i){const dz=$('doux'),g=$('guide');
   if(i<0){if(!dz.textContent)return;dz.classList.add('sort');setTimeout(()=>{if(sess&&sess.msg<0){dz.textContent='';dz.className='doux'}},1700);setTimeout(()=>{if(sess&&sess.msg<0)g.style.opacity=1},900);return}
   g.style.opacity=0;ecrireDoux(MESSAGES[i].texte)}
-function ecrireDoux(texte){const dz=$('doux');dz.className='doux';dz.textContent='';
+function ecrireDoux(texte,entier){const dz=$('doux');dz.className='doux';dz.textContent='';
+  if(entier){dz.className='doux entier';dz.textContent=texte;return}
   texte.split(' ').forEach((m,k)=>{const s=document.createElement('span');s.textContent=m;s.style.animationDelay=(.5+k*.16).toFixed(2)+'s';dz.appendChild(s);dz.appendChild(document.createTextNode(' '))})}
 
 /* ---------- Image ---------- */
@@ -942,7 +946,7 @@ function frame(){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
     $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
-    ecrireDoux(MESSAGE_FIN);
+    ecrireDoux(MESSAGE_FIN,true);
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
     sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
     const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
