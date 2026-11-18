@@ -49,10 +49,9 @@ button{font-family:inherit;color:inherit}
 /* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
 .doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
 @keyframes entier{to{opacity:1}}
-/* aube : les messages passent sur le soleil, ils s'affichent sur une carte crème pour rester lisibles (Julien, 18 nov.) */
-.zone .doux:not(:empty){background:rgba(255,249,243,.84);border-radius:18px;padding:10px 18px;box-shadow:0 6px 20px rgba(59,44,31,.10)}
-.zone .doux:not(:empty):not(.entier):not(.sort){animation:carte .9s ease both}
-@keyframes carte{from{opacity:0}to{opacity:1}}
+/* aube : les phrases s'affichent sous le soleil, sur une seule ligne, sans encadré (Julien, 18 nov.) ; place et taille réglées par placerDoux() */
+#doux{position:fixed;left:0;right:0;top:var(--douxY,420px);padding:0 14px;white-space:nowrap;font-size:var(--douxTaille,17px);line-height:1.35}
+#doux.deuxLignes{white-space:normal;line-height:1.22}
 /* aube : le mot et le décompte un peu plus petits et un peu plus haut, pour ne plus empiéter sur le soleil (Julien, 18 nov.) */
 .phase{top:114px}.word{font:600 40px/50px var(--font)}.count{font:800 46px/52px var(--font)}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
@@ -388,18 +387,18 @@ const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Pause',d:1,a:1,b:1,pill:0},{n:'Exp
 const T=S.reduce((s,g)=>s+g.d,0);
 const MOTS=['Inspire','Expire'];
 const GUIDE=['Gonfle doucement le ventre…','Relâche, tout doucement…'];
-// Les messages doux, écrits seulement, chacun pendant deux respirations (choix de Julien, 15 nov. 2026).
+// Les messages doux, écrits seulement : chacun reste 10 secondes, dans tous les lieux (Julien, 18 nov. 2026).
 const MESSAGES=[
-  {de:60,a:66,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
-  {de:120,a:140,texte:'Tu fais ça très bien, laisse-toi guider.'},
-  // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
-  {de:180,a:200,texte:"Laisse chaque expiration t'alléger un peu plus."},
-  {de:240,a:260,texte:'Ton souffle ralentit, ton corps se pose.'},
-  {de:300,a:320,texte:"Il n'y a rien d'autre à faire que respirer."},
-  {de:360,a:380,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
-  {de:420,a:440,texte:"Chaque inspiration t'apporte un peu plus de calme."},
-  {de:480,a:500,texte:"Ton corps se détend, ton esprit s'apaise."},
-  {de:540,a:560,texte:'Encore quelques respirations, savoure ce moment.'}
+  {de:60,a:70,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
+  // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
+  {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
+  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose.'},
+  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer."},
+  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
+  {de:420,a:430,texte:"Chaque inspiration t'apporte un peu plus de calme."},
+  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise."},
+  {de:540,a:550,texte:'Encore quelques respirations, savoure ce moment.'}
 ];
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -677,6 +676,21 @@ function vol(el){
   [0,1].forEach(i=>{const p=volPaths[i];if(!f||(i===1&&!f.deux))p.setAttribute('opacity','0');else poserOiseau(p,el,f,i,7)});
   const g=sess.volsNuages.find(v=>el>=v.t&&el<v.t+v.dur);
   if(g)poserOiseau(volPaths[2],el,g,2,3);else volPaths[2].setAttribute('opacity','0')}
+
+/* ---------- Aube : les phrases sous le soleil, sur une seule ligne, sans encadré (Julien, 18 nov.) ---------- */
+// La place suit le dessin : juste sous le disque du soleil, quelle que soit la taille de l'écran.
+// Le texte se règle pour tenir sur une ligne (17 px au plus, 13 px au moins) ; une phrase trop longue passe sur deux lignes.
+function placerDoux(){try{const sc=$('scene'),d=sc.querySelectorAll('.pfsun circle')[3];if(!d)return;
+  const p=sc.createSVGPoint();p.x=0;p.y=+d.getAttribute('cy')+(+d.getAttribute('r'))+14;
+  document.documentElement.style.setProperty('--douxY',Math.round(p.matrixTransform(sc.getScreenCTM()).y)+'px')}catch(e){}}
+function ajusterDoux(){const dz=$('doux');dz.classList.remove('deuxLignes');dz.style.setProperty('--douxTaille','17px');
+  if(!dz.textContent.trim())return;
+  const r=document.createRange();r.selectNodeContents(dz);const w=r.getBoundingClientRect().width,dispo=window.innerWidth-28;
+  const taille=Math.min(17,17*dispo/Math.max(1,w));
+  if(taille<13){dz.classList.add('deuxLignes');dz.style.setProperty('--douxTaille','14px')}else dz.style.setProperty('--douxTaille',taille.toFixed(1)+'px')}
+const ecrireDouxBase=ecrireDoux;
+ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerDoux();ajusterDoux()};
+placerDoux();addEventListener('resize',()=>{placerDoux();ajusterDoux()});
 
 function frame(){
   requestAnimationFrame(frame);
