@@ -730,6 +730,8 @@ function placerDoux(){try{const sc=$('scene'),m=sc.getScreenCTM(),pt=y=>{const p
   // les phrases de 7, 8 et 9 min (Julien, 19 nov.) : plus haut, au-dessus de tous les sommets (le plus haut est à 386)
   const msg=sess&&sess.msg>=0?MESSAGES[sess.msg]:null;if(msg&&msg.de>=420)y=Math.min(y,pt(386-22));
   const dz=$('doux'),h=dz.getBoundingClientRect().height||52;y-=h;
+  // la phrase de fin (Julien, 19 nov.) : plus haut, centrée au milieu de la bande de ciel sous les nuages (de 312 à 416)
+  if(sess&&sess.fin)y=pt(364)-h/2;
   document.documentElement.style.setProperty('--douxY',Math.round(y)+'px')}catch(e){}}
 const ecrireDouxBase=ecrireDoux;
 ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerDoux()};
