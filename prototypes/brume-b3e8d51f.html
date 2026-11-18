@@ -49,6 +49,8 @@ button{font-family:inherit;color:inherit}
 /* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
 .doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
 @keyframes entier{to{opacity:1}}
+/* brume : la phrase de fin sous le soleil, au milieu de l'écran (Julien, 18 nov.) ; hauteur réglée par placerFin() */
+#doux.finSoleil{position:fixed;left:0;right:0;top:var(--finY,400px);padding:0 24px;text-align:center}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -753,8 +755,8 @@ const NIV={musique:.239,gong:.906*.9,chouette:.36};   // gong -10 % (Julien, 18 
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Forêt de brume (Julien, 18 nov.) : la musique dès le début (progressivement, sur le 1er cycle), le gong au 2e cycle,
 // la chouette à 30 s puis chaque minute. Ni vent, ni son d'ambiance.
-// la musique commence 5 s dans le morceau (son début est presque silencieux) et part déjà à mi-volume (Julien, 18 nov.)
-const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=1,MUS_OFF=5,MUS_DEPART=.5;
+// la musique commence 8 s dans le morceau (son début est presque silencieux) et part déjà à 70 % du volume (Julien, 18 nov.)
+const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=1,MUS_OFF=8,MUS_DEPART=.7;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -853,7 +855,7 @@ function demarrer(depart=0){
   sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
   if(son){try{G=build(t0);decoderGongs();decoderChouette();regleMusique(total);
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
-      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});
+      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=Math.max(0,MUS_OFF-3.2*(sess.vitMus||1))}catch(e){}});sess.musDep=true;
       if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
         LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=MUS_OFF+(depart-debutMus)*(sess.vitMus||1);sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
       jouerMedias()}
@@ -1012,9 +1014,18 @@ function animerBrume(t,el){
     m.p.setAttribute('d',top+bot+' Z')})}
 animerBrume(0,-1);
 
+/* ---------- La phrase de fin, sous le soleil, au milieu de l'écran (Julien, 18 nov.) ---------- */
+// Sa hauteur suit le dessin : juste sous le disque du soleil, quelle que soit la taille de l'écran.
+function placerFin(){try{const sc=$('scene'),d=[...sc.querySelectorAll('circle')].find(c=>Math.abs(+c.getAttribute('r')-844*.09)<.5&&c.getAttribute('fill')==='#f2a07c');if(!d)return;
+  const p=sc.createSVGPoint();p.x=0;p.y=+d.getAttribute('cy')+(+d.getAttribute('r'))+18;
+  document.documentElement.style.setProperty('--finY',Math.round(p.matrixTransform(sc.getScreenCTM()).y)+'px')}catch(e){}}
+const ecrireDouxBase=ecrireDoux;
+ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);if(entier){placerFin();$('doux').classList.add('finSoleil')}};
+addEventListener('resize',placerFin);
+
 /* ---------- La musique dure jusqu'au bout (Julien, 18 nov.) ---------- */
-// Le morceau dure 10 min et commence 5 s plus loin (son début est presque muet) : pour une séance de 10 min, il s'arrêterait
-// 5 s avant la fin. On le ralentit alors très légèrement (environ 2 %, sans changer la hauteur des notes) pour qu'on l'entende
+// Le morceau dure 10 min et commence 8 s plus loin (son début est presque muet) : pour une séance de 10 min, il s'arrêterait
+// 8 s avant la fin. On le ralentit alors très légèrement (environ 2,6 %, sans changer la hauteur des notes) pour qu'on l'entende
 // jusqu'au bout de son fondu de fin. Pour 3 et 5 min, il garde sa vitesse normale.
 const DUREE_MUSIQUE=600;
 function regleMusique(total){const el=MEDIA.musique.el;sess.vitMus=Math.min(1,(DUREE_MUSIQUE-MUS_OFF)/(total+FIN_MUSIQUE+1));
