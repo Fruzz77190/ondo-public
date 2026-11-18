@@ -851,11 +851,11 @@ function demarrer(depart=0){
   // depart > 0 (outil de test) : la séance reprend directement à ce moment, sans le décompte
   const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T,c0=Math.floor(depart/T);
   sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
-  if(son){try{G=build(t0);decoderGongs();decoderChouette();
+  if(son){try{G=build(t0);decoderGongs();decoderChouette();regleMusique(total);
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
       LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});
       if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
-        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=depart-debutMus+MUS_OFF;sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
+        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=MUS_OFF+(depart-debutMus)*(sess.vitMus||1);sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
       jouerMedias()}
     catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
@@ -890,8 +890,10 @@ function tick(){
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
     [['la',.2],['fad',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
-    G.sons.f.gain.setValueAtTime(1,e+5);G.sons.f.gain.linearRampToValueAtTime(0,e+15)}
-  if(sess.endDone&&!sess.mediasFin&&n>sess.end+16){sess.mediasFin=true;pauserMedias()}
+    // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
+    G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
+    G.out.gain.setValueAtTime(1,e+FIN_ECRAN);G.out.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6)}
+  if(sess.endDone&&!sess.mediasFin&&n>sess.end+FIN_ECRAN+7){sess.mediasFin=true;pauserMedias()}
 }
 setInterval(()=>{try{tick()}catch(e){toast('Erreur : '+e.message,8000)}},60);
 
@@ -949,20 +951,34 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',p.x.toFixed(1));$(id).setAttribute('cy',p.y.toFixed(1))})}
 
 /* ---------- Les cerfs traversent la forêt, la brume ondule (Julien, 18 nov.) ---------- */
-// Toutes les 3 minutes (Julien, 18 nov.) : un cerf suivi de son faon arrive par la gauche, un faon seul par la droite ;
-// ils avancent doucement le long de leur colline, s'arrêtent de temps en temps, puis sortent de l'écran.
-// Chaque marche démarre et s'arrête en douceur. Le cycle suit l'horloge de la séance (pause, outil « aller à »).
+// Toutes les 3 minutes, des cerfs traversent l'écran : ils avancent doucement le long de leur colline, s'arrêtent de temps
+// en temps (l'un d'eux baisse alors la tête 4 s, comme pour brouter ou boire, puis la relève et repart), puis sortent de l'écran.
+// Passage 1 : un cerf et son faon par la gauche, un faon seul par la droite. Passage 2 (5 et 10 min) : un second faon rejoint
+// la famille (famille de 3). Passage 3 : comme le premier, mais les sens sont inversés. Puis on recommence.
+// Chaque marche démarre et s'arrête en douceur. Le tout suit l'horloge de la séance (pause, outil « aller à »).
 const ANIM={cerfs:[],brumes:[]},CYCLE_CERFS=180;
-// Pour chaque animal : sens (1 = vers la droite), départ dans le cycle, décalage au départ, taille, puis [marche (s), distance, pause (s)]…
-const TRAJETS=[
-  {sens:1, depart:4,   recul:0,  taille:1,  etapes:[[52,150,8],[40,120,9],[52,200,0]]},   // le cerf, par la gauche
-  {sens:1, depart:5.4, recul:20, taille:.7, etapes:[[52,150,8],[40,120,9],[52,200,0]]},   // son faon, juste derrière lui
-  {sens:-1,depart:10,  recul:0,  taille:.7, etapes:[[48,140,9],[50,160,8],[45,170,0]]}];  // un faon seul, par la droite
+// [marche (s), distance, pause (s)]… ; les pauses durent au moins 7 s pour laisser le temps de brouter
+const ETAPES_FAMILLE=[[52,150,8],[40,120,9],[52,200,0]],ETAPES_SEUL=[[48,140,9],[50,160,8],[45,170,0]];
+// Les animaux : 0 = le cerf (bois), 1 = son faon, 2 = le faon seul, 3 = le second faon (passage 2)
+function trajetsDuPassage(p){const type=p%3,famille=type===2?-1:1;
+  const T=[
+    {sens:famille, depart:4,   recul:0,  taille:1,   broute:true,  etapes:ETAPES_FAMILLE},
+    {sens:famille, depart:5.4, recul:20, taille:.7,  broute:false, etapes:ETAPES_FAMILLE},
+    {sens:-famille,depart:10,  recul:0,  taille:.7,  broute:true,  etapes:ETAPES_SEUL},
+    type===1?{sens:famille,depart:6.8,recul:40,taille:.62,broute:false,etapes:ETAPES_FAMILLE}:null];
+  return T}
 (function(){const sc=$('scene'),W=390,H=844,b=H*.72,ph=2*1.3;
   const yCol=x=>{const u=x*.015+ph;return b+Math.sin(u)*4+Math.sin(u*2.3+ph)*4*.35+3};
-  [...sc.querySelectorAll('g')].filter(g=>g.querySelector('ellipse[fill="#9a5e52"]')).forEach((g,i)=>{
-    const x0=[W*.3,W*.38,W*.44][i]||W*.4,d=[1,-1,1][i]||1,tr=TRAJETS[i]||TRAJETS[0];
-    ANIM.cerfs.push({g,x0,d,y0:yCol(x0),yCol,tr,xDebut:(tr.sens>0?-40:430)-tr.sens*tr.recul})});
+  const groupes=[...sc.querySelectorAll('g')].filter(g=>g.querySelector('ellipse[fill="#9a5e52"]'));
+  // le second faon : une copie du premier, ajoutée juste après lui
+  if(groupes[1]){const c=groupes[1].cloneNode(true);groupes[1].parentNode.insertBefore(c,groupes[1].nextSibling);groupes.push(c)}
+  groupes.forEach((g,i)=>{
+    const x0=[W*.3,W*.38,W*.44,W*.38][i]||W*.4,d=[1,-1,1,-1][i]||1,s=+g.querySelector('ellipse').getAttribute('rx')/13;
+    // la tête (cou, tête, oreille et bois) est regroupée pour pouvoir la baisser autour de la base du cou
+    const kids=[...g.children],tete=document.createElementNS('http://www.w3.org/2000/svg','g');
+    [kids[5],kids[6],kids[7],kids[9]].filter(Boolean).forEach(e=>tete.appendChild(e));g.appendChild(tete);
+    const y0=yCol(x0);
+    ANIM.cerfs.push({g,tete,x0,d,s,y0,yCol,pivot:[x0+10.5*s*d,y0-19.5*s]})});
   // Les volutes de brume (Julien, 18 nov.) : sur tout l'écran, elles avancent doucement comme des vagues (bords ondulés qui
   // se déplacent, légère houle verticale). Les grandes nappes du haut bougent plus ; les bandes fines du bas un peu moins.
   [...sc.querySelectorAll('rect[fill="#fbefe4"]')].forEach((r,i)=>{
@@ -970,26 +986,39 @@ const TRAJETS=[
     const p=document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('fill','#fbefe4');p.setAttribute('opacity',r.getAttribute('opacity'));r.parentNode.insertBefore(p,r);r.remove();
     ANIM.brumes.push({p,y,h,k:2*Math.PI/(300+i*40),v:2*Math.PI/(30+i*7)*(i%2?-1:1),f:i*1.7,A:haut?13-i*2.5:Math.min(7,h*.45),H:haut?4:2})})})();
-// Où en est un cerf à l'instant u du cycle : distance parcourue et vitesse (0 à l'arrêt). Chaque marche suit une courbe douce
-// (départ et arrivée sans à-coup), d'où des mouvements fluides.
-function etatCerf(tr,u){let t=u-tr.depart,dist=0;if(t<0)return{dist:-1,v:0};
-  for(const [m,d,p] of tr.etapes){if(t<m){const q=t/m;return{dist:dist+d*(q-Math.sin(2*Math.PI*q)/(2*Math.PI)),v:d/m*(1-Math.cos(2*Math.PI*q))}}
-    t-=m;dist+=d;if(t<p)return{dist,v:0};t-=p}
-  return{dist:dist+1000,v:0}}
+// Où en est un animal à l'instant u du passage : distance parcourue, vitesse (0 à l'arrêt) et tête baissée (0 à 1).
+// Chaque marche suit une courbe douce (départ et arrivée sans à-coup). Pendant une pause, celui qui broute baisse la tête
+// 1 s après l'arrêt (en 0,9 s), la garde baissée 4 s, la relève (0,9 s) puis repart.
+const lisse=x=>(1-Math.cos(Math.PI*Math.max(0,Math.min(1,x))))/2;
+function etatCerf(tr,u){let t=u-tr.depart,dist=0;if(t<0)return{dist:-1,v:0,tete:0};
+  for(const [m,d,p] of tr.etapes){if(t<m){const q=t/m;return{dist:dist+d*(q-Math.sin(2*Math.PI*q)/(2*Math.PI)),v:d/m*(1-Math.cos(2*Math.PI*q)),tete:0}}
+    t-=m;dist+=d;if(t<p){const h=tr.broute?Math.min(lisse((t-1)/.9),1-lisse((t-5.9)/.9)):0;return{dist,v:0,tete:h}}t-=p}
+  return{dist:dist+1000,v:0,tete:0}}
 function animerBrume(t,el){
-  ANIM.cerfs.forEach(c=>{
-    const u=el==null||el<0?-1:el%CYCLE_CERFS,e=u<0?{dist:-1,v:0}:etatCerf(c.tr,u);
+  const p=el==null||el<0?-1:Math.floor(el/CYCLE_CERFS),u=p<0?-1:el-p*CYCLE_CERFS,TR=p<0?[]:trajetsDuPassage(p);
+  ANIM.cerfs.forEach((c,i)=>{
+    const tr=TR[i],e=!tr||u<0?{dist:-1}:etatCerf(tr,u);
     if(e.dist<0||e.dist>500){c.g.setAttribute('opacity','0');return}
     c.g.setAttribute('opacity','1');
-    const x=c.xDebut+c.tr.sens*e.dist,pas=e.v>.3?Math.abs(Math.sin(el*Math.PI*1.8))*.7*Math.min(1,e.v/2):0;
-    const y=c.yCol(x)-pas,sx=c.tr.sens*c.d,f=c.tr.taille;   // il regarde toujours dans le sens de sa marche ; les faons sont plus petits
-    c.g.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(sx*f).toFixed(3)} ${f}) translate(${(-c.x0).toFixed(2)} ${(-c.y0).toFixed(2)})`)});
+    const xDebut=(tr.sens>0?-40:430)-tr.sens*tr.recul,x=xDebut+tr.sens*e.dist;
+    const pas=e.v>.3?Math.abs(Math.sin(el*Math.PI*1.8))*.7*Math.min(1,e.v/2):0;
+    const y=c.yCol(x)-pas,sx=tr.sens*c.d,f=tr.taille;   // il regarde toujours dans le sens de sa marche ; les faons sont plus petits
+    c.g.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${(sx*f).toFixed(3)} ${f}) translate(${(-c.x0).toFixed(2)} ${(-c.y0).toFixed(2)})`);
+    c.tete.setAttribute('transform',e.tete>0?`rotate(${(62*e.tete*c.d).toFixed(1)} ${c.pivot[0].toFixed(1)} ${c.pivot[1].toFixed(1)})`:'')});
   ANIM.brumes.forEach(m=>{const ph=t*m.v+m.f,dy=Math.sin(t*2*Math.PI/19+m.f)*m.H;let top='',bot='';
     // bord haut : une grande vague qui avance, plus une petite qui l'arrondit (aspect de volute)
     for(let x=-10;x<=400;x+=8){top+=(top?' L':'M')+x+','+(m.y+dy+m.A*Math.sin(x*m.k+ph)+m.A*.35*Math.sin(x*m.k*2.7-ph*1.4+1)).toFixed(1)}
     for(let x=400;x>=-10;x-=8){bot+=' L'+x+','+(m.y+m.h+dy+m.A*.8*Math.sin(x*m.k*1.2+ph*.9+2)+m.A*.3*Math.sin(x*m.k*3.1+ph*1.6)).toFixed(1)}
     m.p.setAttribute('d',top+bot+' Z')})}
 animerBrume(0,-1);
+
+/* ---------- La musique dure jusqu'au bout (Julien, 18 nov.) ---------- */
+// Le morceau dure 10 min et commence 5 s plus loin (son début est presque muet) : pour une séance de 10 min, il s'arrêterait
+// 5 s avant la fin. On le ralentit alors très légèrement (environ 2 %, sans changer la hauteur des notes) pour qu'on l'entende
+// jusqu'au bout de son fondu de fin. Pour 3 et 5 min, il garde sa vitesse normale.
+const DUREE_MUSIQUE=600;
+function regleMusique(total){const el=MEDIA.musique.el;sess.vitMus=Math.min(1,(DUREE_MUSIQUE-MUS_OFF)/(total+FIN_MUSIQUE+1));
+  try{el.preservesPitch=true;el.webkitPreservesPitch=true;el.mozPreservesPitch=true}catch(e){}el.playbackRate=sess.vitMus}
 
 /* ---------- La chouette (Julien, 18 nov.) : à 30 s, les 15 premières secondes de son chant, puis à nouveau chaque minute ---------- */
 // Assez bas pour ne pas couvrir le gong (environ 8 dB sous lui).
