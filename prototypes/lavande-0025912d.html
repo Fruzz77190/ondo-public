@@ -693,8 +693,16 @@ const MOTS=['Inspire','Expire'];
 const GUIDE=['Inspire doucement…','Expire lentement, comme le vent dans la lavande…'];
 // Les messages doux, écrits seulement, chacun pendant deux respirations (choix de Julien, 15 nov. 2026).
 const MESSAGES=[
-  {de:60,a:60+2*T,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par la musique et le bruit du vent.'},
-  {de:120,a:120+2*T,texte:'Tu fais ça très bien. Continue à ton rythme.'}
+  {de:60,a:60+2*T,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:120,a:140,texte:'Tu fais ça très bien. Continue à ton rythme.'},
+  // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (proposées le 18 nov., à valider par Julien)
+  {de:180,a:200,texte:"Laisse chaque expiration t'alléger un peu plus."},
+  {de:240,a:260,texte:'Ton souffle ralentit, ton corps se pose.'},
+  {de:300,a:320,texte:"Il n'y a rien d'autre à faire que respirer."},
+  {de:360,a:380,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
+  {de:420,a:440,texte:"Chaque inspiration t'apporte un peu plus de calme."},
+  {de:480,a:500,texte:'Relâche tes épaules, ta mâchoire, ton front.'},
+  {de:540,a:560,texte:'Encore quelques respirations, savoure ce moment.'}
 ];
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -720,9 +728,9 @@ const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-lavande-0025912d/';
-const NIV={musique:.338,cigales:.393,gong:.513};   // cigales baissées de 2 dB (Julien, 18 nov.) ; gong et musique au même niveau, le vent un peu dessous
-// Musique retirée pour ce test (Julien, 18 nov.) : remettre true pour la réentendre.
-const AVEC_MUSIQUE=false;
+const NIV={musique:.239,cigales:.393,gong:.513};   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
+// À 1 minute, les cigales s'effacent pendant que la musique arrive (fondu sur une respiration, 14 s).
+const AVEC_MUSIQUE=true,FONDU_DE=60,FONDU_DUREE=T;
 const LONGS=AVEC_MUSIQUE?['cigales','musique']:['cigales'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -754,7 +762,7 @@ function build(t0){
   // les fichiers longs (musique, cigales) sont lus en continu par le téléphone, puis passent par nos réglages de volume
   LONGS.forEach(n=>{const m=media(n);if(!m.src)m.src=ctx.createMediaElementSource(m.el);try{m.src.disconnect()}catch(e){}});
   // 1er cycle : les cigales
-  g.cigOn=ctx.createGain();g.cigOn.gain.value=0;g.cigOn.gain.setValueAtTime(0,t0-1);g.cigOn.gain.linearRampToValueAtTime(1,t0+6);g.cigOn.connect(g.sons.u);
+  g.cigOn=ctx.createGain();g.cigOn.gain.value=0;g.cigOn.gain.setValueAtTime(0,t0-1);g.cigOn.gain.linearRampToValueAtTime(1,t0+6);g.cigOn.gain.setValueAtTime(1,t0+FONDU_DE);g.cigOn.gain.linearRampToValueAtTime(0,t0+FONDU_DE+FONDU_DUREE);g.cigOn.connect(g.sons.u);
   const cl=ctx.createGain();cl.gain.value=NIV.cigales;MEDIA.cigales.src.connect(cl).connect(g.cigOn);
   // 2e cycle : le vent dans la lavande, qui respire avec toi
   g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T);x.gain.linearRampToValueAtTime(1,t0+T+8)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
@@ -767,7 +775,7 @@ function build(t0){
   g.ventNiv=3.16;   // +10 dB : le vent reste discret (2 dB sous la musique et les cigales) mais s'entend
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
-  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+2*T);g.musOn.gain.linearRampToValueAtTime(1,t0+2*T+10);
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+FONDU_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+FONDU_DE+FONDU_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=1;g.gong.connect(g.sons.u);
@@ -778,14 +786,17 @@ function build(t0){
 function applyMute(){if(G&&ctx)G.mute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08)}
 $('btnSon').addEventListener('click',e=>{e.stopPropagation();muet=!muet;try{localStorage.setItem('ondo-proto-muet',muet?'1':'0')}catch(err){}renderSon();applyMute()});
 
-// Une frappe de gong. Avant la frappe suivante, il baisse à -9 dB en 0,5 s, puis s'efface sous elle en 1,6 s (transition validée par Julien).
-function frapper(nom,w,suivante,dest,niv=1){const b=GONGS[nom];if(!b||!G){DIAG.manque++;return}DIAG.frappes++;DIAG.derniere=nom+' à '+(sess?Math.round(w-sess.t0):'?')+' s';
+// Une frappe de gong. Il s'efface nettement pendant la dernière seconde de l'inspire (ou de l'expire) : -12 dB en haut de la courbe
+// (ou en bas), pour sentir yeux fermés que le souffle va changer ; il continue de baisser pendant la pause (-15 dB),
+// puis s'éteint sous la frappe suivante en 1,6 s.
+function frapper(nom,w,suivante,dest,niv=1,finPhase){const b=GONGS[nom];if(!b||!G){DIAG.manque++;return}DIAG.frappes++;DIAG.derniere=nom+' à '+(sess?Math.round(w-sess.t0):'?')+' s';
   const s=ctx.createBufferSource();s.buffer=b;const e=ctx.createGain();const L=NIV.gong*niv,B=Math.pow(10,-9/20);
   e.gain.setValueAtTime(L,w);
-  if(suivante){const g=e.gain;g.setValueAtTime(L,suivante-.5);
-    // baisse en douceur jusqu'au coup suivant, puis s'efface dessous (rampes simples, fiables sur tous les téléphones)
-    [[.125,.146],[.25,.5],[.375,.854],[.5,1]].forEach(([dt,p])=>g.linearRampToValueAtTime(L*(1-(1-B)*p),suivante-.5+dt));
-    [[.4,.5625],[.8,.25],[1.2,.0625],[1.6,0]].forEach(([dt,q])=>g.linearRampToValueAtTime(L*B*q,suivante+dt))}
+  if(suivante){const g=e.gain,F=finPhase||suivante-.5,H=Math.pow(10,-12/20),P=Math.pow(10,-15/20);g.setValueAtTime(L,F-1);
+    // rampes simples, fiables sur tous les téléphones
+    [[.25,.146],[.5,.5],[.75,.854],[1,1]].forEach(([dt,p])=>g.linearRampToValueAtTime(L*(1-(1-H)*p),F-1+dt));
+    g.linearRampToValueAtTime(L*P,suivante);
+    [[.4,.5625],[.8,.25],[1.2,.0625],[1.6,0]].forEach(([dt,q])=>g.linearRampToValueAtTime(L*P*q,suivante+dt))}
   s.connect(e).connect(dest||G.gong);s.start(w);if(suivante)s.stop(suivante+1.7);G.srcs.push(s)}
 function bird(w){const p=panner();const o=ctx.createGain();if(p){p.pan.value=Math.random()*1.4-.7;o.connect(p).connect(G.ventOn)}else o.connect(G.ventOn);const s=ctx.createGain();s.gain.value=.5;o.connect(s).connect(G.oisRevOn);
   const n=2+Math.floor(Math.random()*4),f0=2500+Math.random()*1300,up=Math.random()<.6;let t=w;
@@ -828,7 +839,7 @@ function planifier(g,w,k){
   follow(G.rustle.gain,w,g.d,(.004+.007*l0)*G.ventNiv,(.004+.007*l1)*G.ventNiv);
   // le gong entre au 4e cycle (une respiration après la musique) : La au début de l'inspire, Ré au début de l'expire
   if(Math.floor(k/S.length)>=3&&(g.n==='Inspire'||g.n==='Expire')){
-    const suivante=w+g.d+S[(k+1)%S.length].d;try{frapper(g.n==='Inspire'?'la':'re',w,suivante)}catch(e){toast('Gong : '+e.message,8000)}}
+    const suivante=w+g.d+S[(k+1)%S.length].d;try{frapper(g.n==='Inspire'?'la':'re',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -840,9 +851,8 @@ function tick(){
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
   while(sess.bi<H&&sess.bi<stop){bird(sess.bi);sess.bi+=9+Math.random()*14}
   // la musique repart de son début au moment où elle entre (3e cycle)
-  if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+2*T-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=0}catch(e){}}
+  if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+FONDU_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=0}catch(e){}}
   // les cigales s'effacent pendant le 3e cycle avant la fin
-  if(!sess.cigFin&&sess.end-3*T<H){sess.cigFin=true;const d=Math.max(sess.end-3*T,n);G.cigOn.gain.cancelScheduledValues(d);G.cigOn.gain.setValueAtTime(1,d);G.cigOn.gain.linearRampToValueAtTime(0,sess.end-2*T)}
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
     [['la',.2],['fad',2.8],['re',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
@@ -892,7 +902,7 @@ function dessinerCrete(sec){let dp='',df='';
   $('passe').setAttribute('d',dp);$('avenir').setAttribute('d',df);const y=yAt(sec);$('halo').setAttribute('cy',y);$('point').setAttribute('cy',y)}
 function fondu(el){el.style.transition='none';el.style.opacity=.35;void el.offsetWidth;el.style.transition='opacity .6s ease';el.style.opacity=1}
 const reduit=matchMedia('(prefers-reduced-motion: reduce)').matches;
-function papillon(el){const d0=16,D=16,p=(el-d0)/D,P=$('pap');
+function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   // une fois par minute : 16 s, 1 min 16, 2 min 16…
   if(reduit||p<0||p>1){P.setAttribute('opacity',0);return}
   const x=-30+p*450,y=372+Math.sin(p*Math.PI*3.2)*22-Math.sin(p*Math.PI)*30,r=Math.cos(p*Math.PI*3.2)*12;
   P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
