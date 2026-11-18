@@ -968,20 +968,33 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
   const disque=[...sv.querySelectorAll('circle[fill="#fbefe4"]')].find(c=>c.getAttribute('cx')===cx&&c.getAttribute('cy')===cy);
   if(disque)disque.setAttribute('fill','#e6dcd8')});
 
+/* ---------- Un voile léger et changeant sur la lune (Julien, 19 nov.) ---------- */
+// De fins nuages de nuit, de la couleur du ciel, passent lentement devant la lune : elle est tantôt dégagée, tantôt un peu voilée.
+// Chaque nuage avance à son propre rythme (de 3 à 5 points par seconde) et revient par la gauche quand il est sorti à droite.
+const VOILE=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',a=sc.querySelector('circle[fill="#b9b2ea"]');if(!a)return null;
+  const lune=a.parentNode,cy=+a.getAttribute('cy'),g=document.createElementNS(NS,'g');g.setAttribute('pointer-events','none');lune.after(g);
+  // bords fondus (flou léger) : un voile de brume plutôt que des bandes nettes
+  const f=document.createElementNS(NS,'filter');f.id='voileFlou';[['x','-30%'],['y','-200%'],['width','160%'],['height','500%']].forEach(([k,v])=>f.setAttribute(k,v));
+  const b=document.createElementNS(NS,'feGaussianBlur');b.setAttribute('stdDeviation','5');f.appendChild(b);
+  let defs=sc.querySelector('defs');if(!defs){defs=document.createElementNS(NS,'defs');sc.insertBefore(defs,sc.firstChild)}defs.appendChild(f);g.setAttribute('filter','url(#voileFlou)');
+  const N=[[170,18,-12,3.2,0,.5],[120,14,10,4.4,170,.42],[210,20,26,3.6,330,.45],[100,12,-32,5,250,.38]].map(([w,h,dy,v,x0,o])=>{
+    const r=document.createElementNS(NS,'rect');[['width',w],['height',h],['rx',h/2],['fill','#3a3766'],['opacity',o],['y',cy+dy-h/2]].forEach(([k,val])=>r.setAttribute(k,val));
+    g.appendChild(r);return{r,w,v,x0}});return N})();
+function voilerLune(t){if(!VOILE)return;VOILE.forEach(n=>{const L=390+n.w+120,x=((n.x0+t*n.v)%L+L)%L-n.w-60;n.r.setAttribute('x',x.toFixed(1))})}
+voilerLune(0);
+
 /* ---------- La jonque (Julien, 19 nov.) ---------- */
 // Une jonque glisse sur la ligne d'horizon, de gauche à droite, pendant toute la séance (quelle que soit sa durée) :
 // elle entre par la gauche au début et sort par la droite à la fin. Elle passe derrière les rochers et la côte, et tangue à peine.
 const JONQUE=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',kids=[...sc.children];
   const cote=kids.find(e=>e.tagName==='path'&&e.getAttribute('fill')==='#1c1a36');if(!cote)return null;
   const hz=844*.58,g=document.createElementNS(NS,'g'),mk=(t,a)=>{const e=document.createElementNS(NS,t);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));g.appendChild(e);return e};
-  // coque aux extrémités relevées, deux voiles à lattes (la grande au milieu, la petite à l'avant), comme une silhouette lointaine
-  mk('path',{d:'M-23,-8 Q-19,-1 -12,1 L13,1 Q19,-1 24,-9 L15,-5 L-15,-5 Z',fill:'#16142c'});
-  mk('line',{x1:2,y1:-5,x2:2,y2:-34,stroke:'#16142c','stroke-width':1.2});
-  mk('line',{x1:-12,y1:-5,x2:-12,y2:-24,stroke:'#16142c','stroke-width':1});
-  mk('path',{d:'M2.6,-33 Q12,-31 15,-22 L13,-7 L2.6,-7 Z',fill:'#1d1a37'});
-  mk('path',{d:'M-11.4,-23 Q-5,-22 -3,-16 L-4,-7 L-11.4,-7 Z',fill:'#1d1a37'});
-  [-28,-23,-18,-13].forEach(y=>mk('line',{x1:2.6,y1:y,x2:14.5-Math.abs(y+22)*.12,y2:y+1,stroke:'#2c2950','stroke-width':.8}));
-  [-19,-14,-10].forEach(y=>mk('line',{x1:-11.4,y1:y,x2:-3.6,y2:y+.6,stroke:'#2c2950','stroke-width':.7}));
+  // épurée (Julien, 19 nov.) : une coque en fin croissant et deux voiles en éventail, d'une seule teinte, sans détail ;
+  // un trait de reflet très pâle sur l'eau, juste dessous
+  mk('path',{d:'M-22,-5 Q0,3 22,-6 Q0,-1 -22,-5 Z',fill:'#16142c'});
+  mk('path',{d:'M1,-4 L1,-34 Q15,-27 16,-6 Z',fill:'#16142c'});
+  mk('path',{d:'M-3,-4 L-3,-22 Q-12,-16 -13,-5 Z',fill:'#16142c'});
+  mk('rect',{x:-16,y:3,width:30,height:1.2,rx:.6,fill:'#b9b2ea',opacity:.18});
   cote.parentNode.insertBefore(g,cote);return{g,y:hz+2,s:.8}})();
 function jonque(p){if(!JONQUE)return;const t=performance.now()/1000,x=-40+(390+80)*clamp(p);
   JONQUE.g.setAttribute('transform',`translate(${x.toFixed(2)},${(JONQUE.y+Math.sin(t*1.1)*.6).toFixed(2)}) rotate(${(Math.sin(t*.8)*1.2).toFixed(2)}) scale(${JONQUE.s})`)}
@@ -992,7 +1005,7 @@ jonque(0);
 const LUCIOLES=(function(){const sc=$('scene'),out=[];
   [...sc.querySelectorAll('circle')].forEach(h=>{if(h.getAttribute('fill')!=='#ffd27a'||h.getAttribute('r')!=='5')return;const c=h.nextElementSibling;
     if(!c||c.getAttribute('fill')!=='#ffe9a8')return;out.push({h,c,x:+h.getAttribute('cx'),y:+h.getAttribute('cy')})});return out})();
-function animerLucioles(t){LUCIOLES.forEach((f,k)=>{const dx=Math.sin(t*.35+k*1.7)*9+Math.sin(t*.13+k)*5,dy=Math.cos(t*.29+k*2.3)*7;
+function animerLucioles(t){voilerLune(t);LUCIOLES.forEach((f,k)=>{const dx=Math.sin(t*.35+k*1.7)*9+Math.sin(t*.13+k)*5,dy=Math.cos(t*.29+k*2.3)*7;
   [f.h,f.c].forEach(e=>{e.setAttribute('cx',(f.x+dx).toFixed(2));e.setAttribute('cy',(f.y+dy).toFixed(2))});
   f.h.setAttribute('opacity',(.12+.12*Math.sin(t*1.3+k)).toFixed(3))})}
 animerLucioles(0);
