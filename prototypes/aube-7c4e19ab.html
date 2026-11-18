@@ -45,6 +45,10 @@ button{font-family:inherit;color:inherit}
 /* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
 .doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
 @keyframes entier{to{opacity:1}}
+/* aube : les messages passent sur le soleil, ils s'affichent sur une carte crème pour rester lisibles (Julien, 18 nov.) */
+.zone .doux:not(:empty){background:rgba(255,249,243,.84);border-radius:18px;padding:10px 18px;box-shadow:0 6px 20px rgba(59,44,31,.10)}
+.zone .doux:not(:empty):not(.entier):not(.sort){animation:carte .9s ease both}
+@keyframes carte{from{opacity:0}to{opacity:1}}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -375,7 +379,7 @@ const MOTS=['Inspire','Expire'];
 const GUIDE=['Gonfle doucement le ventre…','Relâche, tout doucement…'];
 // Les messages doux, écrits seulement, chacun pendant deux respirations (choix de Julien, 15 nov. 2026).
 const MESSAGES=[
-  {de:60,a:88,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:60,a:80,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
   {de:120,a:140,texte:'Tu fais ça très bien, laisse-toi guider.'},
   // séances de 5 et 10 min : une phrase de 20 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
   {de:180,a:200,texte:"Laisse chaque expiration t'alléger un peu plus."},
@@ -412,7 +416,7 @@ const VOL={musique:1.15,sons:.75};
 const SONS='sons-aube-7c4e19ab/';
 // Mêmes niveaux que la lavande (Julien : le volume doit être le même d'un lieu à l'autre). Les oiseaux sont enregistrés 8 dB
 // plus bas que les cigales (-28 LUFS au lieu de -20) : ils sont remontés d'autant pour finir au même niveau qu'elles.
-const NIV={musique:.239,oiseaux:.157*2.512,gong:.906};
+const NIV={musique:.239,oiseaux:.157*2.512*1.5,gong:.906};   // oiseaux +50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
@@ -460,8 +464,8 @@ function build(t0){
   const rs=ctx.createBufferSource();rs.buffer=pink;rs.loop=true;rs.playbackRate.value=.9;
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
-  // vent : mêmes niveaux que la lavande ; +10 % pendant que la musique arrive (4e cycle)
-  g.ventAvant=1.58*.8;g.ventApres=1.58*.8*1.1;
+  // vent : niveaux de la lavande, puis -50 % pour l'aube (Julien, 18 nov.) ; +10 % pendant que la musique arrive (4e cycle)
+  g.ventAvant=1.58*.8*.5;g.ventApres=1.58*.8*.5*1.1;
   g.ventNiv=t=>{const a=t0+MUS_DE,b=a+MUS_DUREE;return t<=a?g.ventAvant:t>=b?g.ventApres:g.ventAvant+(g.ventApres-g.ventAvant)*(t-a)/(b-a)};
   // 4e cycle : la musique de Julien, depuis son début, qui arrive progressivement
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
@@ -605,36 +609,46 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 /* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
 // Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
 const VOL_COUL='#b4583a';
-const volPaths=[0,1].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+const volPaths=[0,1,2].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
   p.setAttribute('fill','none');p.setAttribute('stroke',VOL_COUL);p.setAttribute('stroke-width','1.5');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.setAttribute('opacity','0');
   $('volG').appendChild(p);return p});
-// Un passage environ toutes les 30 à 45 s (le premier vers 12 s), parfois à deux ; chaque traversée dure 18 à 24 s.
-// Ils volent entre les textes et l'encadré de la courbe, devant le soleil, pour ne jamais passer derrière un mot.
+// Devant le soleil : un passage environ toutes les 30 à 45 s (le premier vers 12 s), parfois à deux ; chaque traversée dure 18 à 24 s.
+// Ils volent entre les textes et l'encadré de la courbe, pour ne jamais passer derrière un mot.
 function prevoirVols(){const v=[];let t=10+Math.random()*5;
   while(t<720){const dur=18+Math.random()*6;
     v.push({t,dur,dir:Math.random()<.5?1:-1,y:318+Math.random()*82,s:1.05+Math.random()*.35,deux:Math.random()<.45,ph:Math.random()*6.28});
     t+=dur+12+Math.random()*15}
   return v}
+// Entre les nuages (Julien, 18 nov.) : de temps en temps, un oiseau seul de gauche à droite, entre le nuage le plus bas
+// et les deux plus hauts (hauteur calculée sur les nuages du paysage). Le premier vers 35 s, puis toutes les 50 à 80 s.
+function hauteurEntreNuages(){const ys=[...$('scene').querySelectorAll('.pfclouds rect')].map(r=>+r.getAttribute('y'));
+  if(ys.length<6)return 254;
+  const nuages=[0,2,4].map(i=>[Math.min(ys[i],ys[i+1]),Math.max(ys[i],ys[i+1])+9]).sort((a,b)=>a[0]-b[0]);
+  return (nuages[1][1]+nuages[2][0])/2}
+function prevoirVolsNuages(){const v=[],y=hauteurEntreNuages();let t=32+Math.random()*8;
+  while(t<720){const dur=19+Math.random()*4;v.push({t,dur,dir:1,y,s:.95+Math.random()*.15,deux:false,ph:Math.random()*6.28});t+=dur+30+Math.random()*30}
+  return v}
 // Un oiseau : deux ailes en courbe ; k = position des ailes (0 = levées, 1 = baissées).
 function dessinOiseau(k){const bout=-5.2+7.4*k,ctl=-4.2+5.2*k;
   return `M-9,${bout.toFixed(2)} Q-4.6,${ctl.toFixed(2)} 0,0 Q4.6,${ctl.toFixed(2)} 9,${bout.toFixed(2)}`}
+function poserOiseau(p,el,f,i,houle){
+  const lag=i===1?0.9:0,q=(el-f.t-lag)/f.dur;
+  if(q<0||q>1){p.setAttribute('opacity','0');return}
+  const x0=f.dir>0?-30:420,x=x0+f.dir*450*q-(i===1?f.dir*20:0);
+  const y=f.y+(i===1?11:0)+Math.sin(q*Math.PI*1.4+f.ph)*houle-q*(houle>4?12:3);
+  // battements d'ailes (2,3 par seconde) qui s'adoucissent régulièrement en vol plané
+  const tt=el-lag+(i===1?.37:0),plane=.3+.7*(.5+.5*Math.cos(2*Math.PI*tt/3.4+f.ph));
+  const k=.5+.5*Math.sin(2*Math.PI*2.3*tt)*plane;
+  p.setAttribute('d',dessinOiseau(k));
+  p.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(f.s*(i===1?.85:1)).toFixed(2)})`);
+  p.setAttribute('opacity',(Math.min(1,q*9,(1-q)*9)*.72).toFixed(2))}
 function vol(el){
   if(el<0||reduit||!sess){volPaths.forEach(p=>p.setAttribute('opacity','0'));return}
-  if(!sess.vols)sess.vols=prevoirVols();
+  if(!sess.vols){sess.vols=prevoirVols();sess.volsNuages=prevoirVolsNuages()}
   const f=sess.vols.find(v=>el>=v.t&&el<v.t+v.dur+1.2);
-  volPaths.forEach((p,i)=>{
-    if(!f||(i===1&&!f.deux)){p.setAttribute('opacity','0');return}
-    const lag=i?0.9:0,q=(el-f.t-lag)/f.dur;
-    if(q<0||q>1){p.setAttribute('opacity','0');return}
-    const x0=f.dir>0?-30:420,x=x0+f.dir*450*q-(i?f.dir*20:0);
-    const y=f.y+(i?11:0)+Math.sin(q*Math.PI*1.4+f.ph)*7-q*12;
-    // battements d'ailes (2,3 par seconde) qui s'adoucissent régulièrement en vol plané
-    const tt=el-lag+(i?.37:0),plane=.3+.7*(.5+.5*Math.cos(2*Math.PI*tt/3.4+f.ph));
-    const k=.5+.5*Math.sin(2*Math.PI*2.3*tt)*plane;
-    const op=Math.min(1,q*9,(1-q)*9)*.72;
-    p.setAttribute('d',dessinOiseau(k));
-    p.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(f.s*(i?.85:1)).toFixed(2)})`);
-    p.setAttribute('opacity',op.toFixed(2))})}
+  [0,1].forEach(i=>{const p=volPaths[i];if(!f||(i===1&&!f.deux))p.setAttribute('opacity','0');else poserOiseau(p,el,f,i,7)});
+  const g=sess.volsNuages.find(v=>el>=v.t&&el<v.t+v.dur);
+  if(g)poserOiseau(volPaths[2],el,g,2,3);else volPaths[2].setAttribute('opacity','0')}
 
 function frame(){
   requestAnimationFrame(frame);
