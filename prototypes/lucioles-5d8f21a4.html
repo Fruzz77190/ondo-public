@@ -760,14 +760,14 @@ const NIV={musique:.239,gong:.906,criquets:.157,mer:.10};   // cigales encore -5
 const AVEC_MUSIQUE=true,MUS_DE=T,MUS_DUREE=T,GONG_CYCLE=3,MUS_OFF=6,MUS_DEPART=0,CRI_DE=5,CRI_DUREE=8,CRI_FIN=120,CRI_FONDU=3*T;
 // La mer démarre 13,3 s dans son fichier : une vague monte pendant la 1re inspiration (sinon on tombait entre deux vagues
 // et la mer ne s'entendait qu'à l'expire — Julien, 19 nov.).
-const LONGS=['mer','criquets','musique'],MER_OFF=13.3;
+const LONGS=['criquets','musique'],MER_OFF=13.3;   // (la mer est retirée, Julien 19 nov. : le vent la remplace)
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
 // Gong accordé à la musique (ré majeur) : La à l'inspire, Ré à l'expire ; La, Fa dièse, Ré pour la fin.
 // Le gong d'origine montait en 5 s : il est remis à pleine force dès la frappe, sinon la musique (qui joue les mêmes notes) le cachait.
 const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
-media('mer');media('criquets');media('musique');
+media('criquets');media('musique');
 const GONGS={};let gongsEnCours=null;
 const gongsCharges=Promise.all(['fa5','re5','re','sol4','sol5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
@@ -790,14 +790,12 @@ function build(t0){
   const brown=noiseBuf('brown',7),pink=noiseBuf('pink',7);
   // les fichiers longs (musique, cigales) sont lus en continu par le téléphone, puis passent par nos réglages de volume
   LONGS.forEach(n=>{const m=media(n);if(!m.src)m.src=ctx.createMediaElementSource(m.el);try{m.src.disconnect()}catch(e){}});
-  // la mer : elle monte sur la 1re inspiration, puis reste en fond, légère, jusqu'à la fin
-  g.merOn=ctx.createGain();g.merOn.gain.value=0;g.merOn.gain.setValueAtTime(0,t0);g.merOn.gain.linearRampToValueAtTime(1,t0+S[0].d);g.merOn.connect(g.sons.u);
-  const mr=ctx.createGain();mr.gain.value=NIV.mer;MEDIA.mer.src.connect(mr).connect(g.merOn);
+  // (la mer est retirée : le vent la remplace, Julien 19 nov.)
   // les criquets : ils arrivent sur la 1re expiration (de 5 à 13 s), puis s'éteignent très progressivement à partir de 2 minutes, sur trois respirations (Julien, 19 nov.)
   g.cigOn=ctx.createGain();g.cigOn.gain.value=0;g.cigOn.gain.setValueAtTime(0,t0+CRI_DE);g.cigOn.gain.linearRampToValueAtTime(1,t0+CRI_DE+CRI_DUREE);g.cigOn.gain.setValueAtTime(1,t0+CRI_FIN);[[.25,.55],[.5,.25],[.75,.08],[1,0]].forEach(([q,v])=>g.cigOn.gain.linearRampToValueAtTime(v,t0+CRI_FIN+q*CRI_FONDU));g.cigOn.connect(g.sons.u);
   const cl=ctx.createGain();cl.gain.value=NIV.criquets;MEDIA.criquets.src.connect(cl).connect(g.cigOn);
   // 2e cycle : le vent dans la lavande, qui respire avec toi
-  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T);x.gain.linearRampToValueAtTime(1,t0+T+8)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
+  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0);x.gain.linearRampToValueAtTime(1,t0+S[0].d)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
   const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
   g.windLp=ctx.createBiquadFilter();g.windLp.type='lowpass';g.windLp.frequency.value=280;g.windLp.Q.value=.4;
   g.wind=ctx.createGain();g.wind.gain.value=.03;ws.connect(g.windLp).connect(g.wind).connect(g.ventOn);ws.start();g.srcs.push(ws);
@@ -805,7 +803,7 @@ function build(t0){
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
-  g.ventNiv=t=>0;   // pas de vent dans la baie des lucioles
+  g.ventNiv=t=>1.58*.8*.5*1.5*1.1;   // le vent remplace la mer (Julien, 19 nov.) : même niveau que le vent de la vallée de l'aube
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
