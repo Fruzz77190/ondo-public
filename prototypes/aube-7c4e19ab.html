@@ -475,7 +475,7 @@ function build(t0){
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // vent : niveaux de la lavande, puis -50 % pour l'aube (Julien, 18 nov.) ; +10 % pendant que la musique arrive (2e cycle)
-  g.ventAvant=1.58*.8*.5;g.ventApres=1.58*.8*.5*1.1;
+  g.ventAvant=1.58*.8*.5*1.5;g.ventApres=1.58*.8*.5*1.5*1.1;   // puis +50 % (Julien, 18 nov.)
   g.ventNiv=t=>{const a=t0+MUS_DE,b=a+MUS_DUREE;return t<=a?g.ventAvant:t>=b?g.ventApres:g.ventAvant+(g.ventApres-g.ventAvant)*(t-a)/(b-a)};
   // 2e cycle, avec le vent : la musique de Julien, depuis son début, qui arrive progressivement
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
