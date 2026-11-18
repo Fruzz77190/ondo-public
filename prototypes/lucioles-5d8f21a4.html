@@ -960,6 +960,13 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
 /* ---------- Pleine lune tout du long (Julien, 19 nov.) ---------- */
 // Le dessin de l'app pose une ombre sur la lune (croissant) : on l'enlève, ici et sur les vignettes de la fiche et de la fin.
 ['scene','sceneFiche','sceneApres'].forEach(id=>{const o=$(id)&&$(id).querySelector('.moonshade');if(o)o.remove()});
+// Lune adoucie (Julien, 19 nov., proposition A) : un crème un peu plus terne, et un halo deux fois moins lumineux.
+['scene','sceneFiche','sceneApres'].forEach(id=>{const sv=$(id);if(!sv)return;
+  const anneaux=[...sv.querySelectorAll('circle[fill="#b9b2ea"]')];if(!anneaux.length)return;
+  anneaux.forEach(c=>c.setAttribute('opacity',(+c.getAttribute('opacity')*.55).toFixed(3)));
+  const cx=anneaux[0].getAttribute('cx'),cy=anneaux[0].getAttribute('cy');
+  const disque=[...sv.querySelectorAll('circle[fill="#fbefe4"]')].find(c=>c.getAttribute('cx')===cx&&c.getAttribute('cy')===cy);
+  if(disque)disque.setAttribute('fill','#e6dcd8')});
 
 /* ---------- La jonque (Julien, 19 nov.) ---------- */
 // Une jonque glisse sur la ligne d'horizon, de gauche à droite, pendant toute la séance (quelle que soit sa durée) :
