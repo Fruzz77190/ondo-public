@@ -640,25 +640,29 @@ function animerCiel(el,lvl){const g=document.querySelector('#scene .pfclouds');i
   g.setAttribute('transform',`translate(${(lvl*.5*6+(el>0?(el*7)%390:0)).toFixed(2)},0)`)}
 
 /* ---------- Le soleil se couche (Julien, 19 nov.) ---------- */
-// Il descend doucement pendant toute la séance, à une vitesse qui dépend de sa durée, et a disparu derrière les montagnes
-// à la fin, quelle que soit la durée choisie. Son reflet sur le lac et son halo s'éteignent avec lui.
+// Il descend doucement pendant toute la séance, à une vitesse qui dépend de sa durée, et a complètement disparu derrière les
+// montagnes 7 s avant la fin, quelle que soit la durée choisie (Julien, 19 nov.). Son reflet sur le lac et son halo s'éteignent avec lui.
+// Mesuré dans la scène : le disque est entièrement caché par les montagnes une fois descendu de 155 points : il y arrive pile 7 s avant
+// la fin. Sa petite montée avec la respiration s'atténue à mesure qu'il descend, pour que ce moment ne bouge pas.
 const SOLEIL=(function(){const sc=$('scene'),g=sc.querySelector('.pfsun'),d=g&&g.querySelectorAll('circle')[3];
   const cy=d?+d.getAttribute('cy'):354,r=d?+d.getAttribute('r'):34,horizon=844*.62;
   const refl=[...sc.querySelectorAll('[transform]')].find(e=>/^translate\(195,523/.test(e.getAttribute('transform')||''));
-  return{g,refl,cy,r,descente:horizon-(cy-r)+6}})();
+  return{g,refl,cy,r,halos:[...g.querySelectorAll('circle')].slice(0,3),descente:155.5,avantFin:7}})();
+const avanceSoleil=el=>sess?clamp(el/Math.max(1,sess.total-SOLEIL.avantFin)):0;
 let coucherActuel=0;
-function coucher(el,lvl){if(!SOLEIL.g||!sess)return;const p=clamp(el/sess.total);coucherActuel=SOLEIL.descente*p;
-  SOLEIL.g.setAttribute('transform',`translate(0,${(-lvl*.5*10+coucherActuel).toFixed(2)})`);
-  SOLEIL.g.setAttribute('opacity',(p<.85?1:Math.max(0,1-(p-.85)/.15)).toFixed(3));
+function coucher(el,lvl){if(!SOLEIL.g||!sess)return;const p=avanceSoleil(el);coucherActuel=SOLEIL.descente*p;
+  SOLEIL.g.setAttribute('transform',`translate(0,${(-lvl*.5*10*(1-p)+coucherActuel).toFixed(2)})`);
+  // le disque reste entier (ce sont les montagnes qui le cachent) ; seul le halo s'efface, sur le dernier quart du coucher
+  const h=(p<.75?1:Math.max(0,1-(p-.75)/.25)).toFixed(3);SOLEIL.halos.forEach(c=>c.style.opacity=h);
   if(SOLEIL.refl)SOLEIL.refl.setAttribute('opacity',(1-p).toFixed(3))}
-function remettreSoleil(){coucherActuel=0;if(SOLEIL.g){SOLEIL.g.removeAttribute('opacity')}if(SOLEIL.refl)SOLEIL.refl.removeAttribute('opacity')}
+function remettreSoleil(){coucherActuel=0;if(SOLEIL.halos)SOLEIL.halos.forEach(c=>c.style.opacity='');if(SOLEIL.g){SOLEIL.g.removeAttribute('opacity')}if(SOLEIL.refl)SOLEIL.refl.removeAttribute('opacity')}
 
 /* ---------- Les phrases sous le soleil (Julien, 19 nov.) ---------- */
 // Leur hauteur suit le soleil, juste sous son disque ; quand il est descendu trop près des ondes du lac, elles passent
 // au-dessus de lui pour ne jamais le chevaucher (phrase de fin comprise).
 function placerDoux(){try{const sc=$('scene'),m=sc.getScreenCTM(),pt=y=>{const p=sc.createSVGPoint();p.x=0;p.y=y;return p.matrixTransform(m).y};
   // la position du soleil à cet instant précis (et non celle de l'image précédente)
-  const off=sess?SOLEIL.descente*clamp((now()-sess.t0)/sess.total):coucherActuel;
+  const off=sess?SOLEIL.descente*avanceSoleil(now()-sess.t0):coucherActuel;
   const dz=$('doux'),h=dz.getBoundingClientRect().height||52,bas=pt(SOLEIL.cy+SOLEIL.r+off+16),limite=pt(OCY-166*OK-14);
   const y=bas+h<=limite?bas:pt(SOLEIL.cy-SOLEIL.r+off-16)-h;
   document.documentElement.style.setProperty('--douxY',Math.round(y)+'px')}catch(e){}}
