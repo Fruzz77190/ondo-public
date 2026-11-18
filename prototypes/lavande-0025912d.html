@@ -814,7 +814,7 @@ let sess=null;
 function demarrer(){
   // 1. L'écran passe tout de suite à la séance, sans attendre le son.
   $('fiche').hidden=true;$('fin').hidden=true;$('echelle').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));$('phaseBox').hidden=false;$('bas').hidden=false;$('btnPause').hidden=false;
-  $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1});
+  $('creteG').style.transition='none';$('creteG').style.opacity=1;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).style.transition='none';$(id).style.opacity=1;$(id).hidden=false});$('count').hidden=true;
   const dz=$('doux');dz.className='doux';dz.textContent='';$('guide').style.opacity=1;
   // 2. Le son : créé et réveillé pendant le toucher (obligatoire sur iPhone).
   let son=true;
@@ -896,8 +896,9 @@ function montrerFiche(){$('fiche').hidden=false;$('fin').hidden=true;$('creteG')
 /* ---------- Les messages doux : mot après mot, puis ils s'effacent ---------- */
 function montrerMessage(i){const dz=$('doux'),g=$('guide');
   if(i<0){if(!dz.textContent)return;dz.classList.add('sort');setTimeout(()=>{if(sess&&sess.msg<0){dz.textContent='';dz.className='doux'}},1700);setTimeout(()=>{if(sess&&sess.msg<0)g.style.opacity=1},900);return}
-  g.style.opacity=0;dz.className='doux';dz.textContent='';
-  MESSAGES[i].texte.split(' ').forEach((m,k)=>{const s=document.createElement('span');s.textContent=m;s.style.animationDelay=(.5+k*.16).toFixed(2)+'s';dz.appendChild(s);dz.appendChild(document.createTextNode(' '))})}
+  g.style.opacity=0;ecrireDoux(MESSAGES[i].texte)}
+function ecrireDoux(texte){const dz=$('doux');dz.className='doux';dz.textContent='';
+  texte.split(' ').forEach((m,k)=>{const s=document.createElement('span');s.textContent=m;s.style.animationDelay=(.5+k*.16).toFixed(2)+'s';dz.appendChild(s);dz.appendChild(document.createTextNode(' '))})}
 
 /* ---------- Image ---------- */
 const X0=195,YT=470,YB=610,PXS=26;
@@ -914,7 +915,9 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
   P.setAttribute('opacity',Math.min(1,p*8,(1-p)*8).toFixed(2));P.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(70+r).toFixed(1)}) scale(1.6)`);
   $('papAiles').setAttribute('transform',`scale(${(.25+.75*Math.abs(Math.cos(el*11))).toFixed(2)} 1)`)}
 
-const FIN_ELEMENTS=['phaseBox','bas','btnPause'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
+const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_ECRAN=FIN_FONDU+5;
+// La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
+const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 function frame(){
   requestAnimationFrame(frame);
   if(!sess)return;
@@ -939,8 +942,9 @@ function frame(){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
     $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
+    ecrireDoux(MESSAGE_FIN);
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
-    sess.ecranFin=true;FIN_ELEMENTS.forEach(id=>{$(id).hidden=true});
+    sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
     const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
     if(sess.wake){try{sess.wake.release()}catch(e){}}
   }
