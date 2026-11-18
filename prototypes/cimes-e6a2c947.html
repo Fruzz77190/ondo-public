@@ -655,7 +655,7 @@ function coucher(el,lvl){if(!SOLEIL.g||!sess)return;const p=avanceSoleil(el);cou
   // le disque reste entier (ce sont les montagnes qui le cachent) ; seul le halo s'efface, sur le dernier quart du coucher
   const h=(p<.75?1:Math.max(0,1-(p-.75)/.25)).toFixed(3);SOLEIL.halos.forEach(c=>c.style.opacity=h);
   if(SOLEIL.refl)SOLEIL.refl.setAttribute('opacity',(1-p).toFixed(3));
-  if(typeof soir==='function')soir(p,lvl)}
+  if(typeof soir==='function')soir(p,lvl,el)}
 function remettreSoleil(){coucherActuel=0;if(typeof remettreSoir==='function')remettreSoir();if(SOLEIL.halos)SOLEIL.halos.forEach(c=>c.style.opacity='');if(SOLEIL.g){SOLEIL.g.removeAttribute('opacity')}if(SOLEIL.refl)SOLEIL.refl.removeAttribute('opacity')}
 
 /* ---------- Le soir qui tombe (Julien, 19 nov.) : le ciel change, les étoiles s'allument, la cabane s'éclaire ---------- */
@@ -666,8 +666,16 @@ function remettreSoleil(){coucherActuel=0;if(typeof remettreSoir==='function')re
 const SOIR=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',kids=[...sc.children];
   const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
   const ciel=kids.filter(e=>e.tagName==='path'&&/^#f[68ac]|^#fe/.test(e.getAttribute('fill')||'')).slice(0,5);
-  const cibles=['#c98f9c','#d69ea2','#e3aea8','#edbfb0','#f6d2be'];
-  const bandes=ciel.map((e,i)=>({e,a:hex(e.getAttribute('fill')),b:hex(cibles[i])}));
+  // à mi-chemin (45 %) entre le ciel de départ et celui du phare du soir de l'app, atteint à la fin du coucher
+  const PHARE=['#5d3e82','#7c5294','#a8679a','#d98a8e','#f6b69a'];
+  const bandes=ciel.map((e,i)=>{const a=hex(e.getAttribute('fill')),f=hex(PHARE[i]);return{e,a,b:a.map((v,k)=>v+(f[k]-v)*.45)}});
+  // le halo du soleil garde le même petit écart de couleur avec le ciel derrière lui qu'au départ (comme dans l'app)
+  // et ses bords se fondent dans le ciel (dégradé) : plus de disque de couleur unie autour du soleil quand le ciel change
+  const halos=SOLEIL.halos.map((c,i)=>{const gr=document.createElementNS(NS,'radialGradient'),id='haloDoux'+i;gr.id=id;
+    const s0=document.createElementNS(NS,'stop'),s1=document.createElementNS(NS,'stop');
+    s0.setAttribute('offset','35%');s1.setAttribute('offset','100%');s1.setAttribute('stop-opacity','0');gr.append(s0,s1);
+    (sc.querySelector('defs')||sc).appendChild(gr);const a=hex(c.getAttribute('fill'));
+    [s0,s1].forEach(x=>x.setAttribute('stop-color',c.getAttribute('fill')));c.setAttribute('fill','url(#'+id+')');return{c,a,stops:[s0,s1]}});
   const lacEl=kids.find(e=>e.tagName==='rect'&&e.getAttribute('fill')==='#f4bf98');
   const lac=lacEl?{e:lacEl,a:hex('#f4bf98'),b:hex('#e7ad9b')}:null;
   // les étoiles, derrière les nuages et le soleil (juste après les bandes du ciel)
@@ -682,21 +690,22 @@ const SOIR=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',kids=
   let refl=null;if(fen){const x=+fen.getAttribute('x')+3.5;refl=[0,1,2].map(k=>{const r=document.createElementNS(NS,'rect');
     [['x',x-(6-k*1.6)],['y',527+k*4.2],['width',12-k*3.2],['height',1.6],['rx',.8],['fill','#ffd27a'],['opacity',0]].forEach(([a,v])=>r.setAttribute(a,v));
     (lacEl||fen).after(r);return{r,x,w:12-k*3.2}})}
-  return{bandes,lac,etoiles,fen,halo,refl,nuit:hex('#b2614a'),jour:hex('#ffd27a')}})();
+  return{bandes,halos,lac,etoiles,fen,halo,refl,nuit:hex('#b2614a'),jour:hex('#ffd27a')}})();
 const melange=(a,b,t)=>'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
 const doux01=x=>{x=clamp(x);return x*x*(3-2*x)};
-function soir(p,lvl){const t=performance.now()/1000;
-  const c=doux01(p)*.65;SOIR.bandes.forEach(b=>b.e.setAttribute('fill',melange(b.a,b.b,c)));
+function soir(p,lvl,el){const t=performance.now()/1000;
+  const c=doux01(p);SOIR.bandes.forEach(b=>b.e.setAttribute('fill',melange(b.a,b.b,c)));
+  const b3=SOIR.bandes[3],b4=SOIR.bandes[4];if(b3&&b4)SOIR.halos.forEach(h=>{const col='rgb('+h.a.map((v,k)=>{const d=((b3.b[k]-b3.a[k])+(b4.b[k]-b4.a[k]))/2;return Math.round(Math.max(0,Math.min(255,v+d*c*.5)))}).join(',')+')';h.stops.forEach(x=>x.setAttribute('stop-color',col))});
   if(SOIR.lac)SOIR.lac.e.setAttribute('fill',melange(SOIR.lac.a,SOIR.lac.b,c*.7));
   SOIR.etoiles.forEach(e=>{const v=doux01((p-e.seuil)/.08);
     e.c.setAttribute('opacity',(v*e.max*(.72+.18*lvl+.1*Math.sin(t*e.vit+e.ph))).toFixed(3))});
-  if(SOIR.fen){const l=doux01((p-.45)/.3),f=1+.06*Math.sin(t*2.3)+.04*Math.sin(t*5.1);
+  const m=sess&&el!=null?el/sess.total:0;if(FUMEE)FUMEE.niv=doux01((m-.5)/.12);
+  if(SOIR.fen){const l=doux01((m-.5)/.25),f=1+.06*Math.sin(t*2.3)+.04*Math.sin(t*5.1);
     SOIR.fen.setAttribute('fill',melange(SOIR.nuit,SOIR.jour,l));
     if(SOIR.halo)SOIR.halo.setAttribute('opacity',(l*.5*f).toFixed(3));
     SOIR.refl.forEach((q,k)=>{q.r.setAttribute('x',(q.x-q.w/2+Math.sin(t*1.6+k*1.9)*1.2).toFixed(2));
       q.r.setAttribute('opacity',(l*(.55-k*.14)*f).toFixed(3))})}}
-function remettreSoir(){soir(0,0)}
-remettreSoir();
+function remettreSoir(){soir(0,0,0)}
 
 /* ---------- Les phrases sous le soleil (Julien, 19 nov.) ---------- */
 // Leur hauteur suit le soleil, juste sous son disque ; quand il est descendu trop près des ondes du lac, elles passent
@@ -704,12 +713,13 @@ remettreSoir();
 function placerDoux(){try{const sc=$('scene'),m=sc.getScreenCTM(),pt=y=>{const p=sc.createSVGPoint();p.x=0;p.y=y;return p.matrixTransform(m).y};
   // la position du soleil à cet instant précis (et non celle de l'image précédente)
   const off=sess?SOLEIL.descente*avanceSoleil(now()-sess.t0):coucherActuel;
-  const dz=$('doux'),h=dz.getBoundingClientRect().height||52,bas=pt(SOLEIL.cy+SOLEIL.r+off+16),limite=pt(OCY-166*OK-14);
-  const y=bas+h<=limite?bas:pt(SOLEIL.cy-SOLEIL.r+off-16)-h;
+  // toujours juste au-dessus du disque du soleil (Julien, 19 nov.), la phrase de guidance s'efface pendant ce temps
+  const dz=$('doux'),h=dz.getBoundingClientRect().height||52,y=pt(SOLEIL.cy-SOLEIL.r+off-14)-h;
   document.documentElement.style.setProperty('--douxY',Math.round(y)+'px')}catch(e){}}
 const ecrireDouxBase=ecrireDoux;
 ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerDoux()};
 placerDoux();addEventListener('resize',placerDoux);
+$('guide').style.transition='opacity .8s ease';   // la guidance s'efface et revient en douceur autour des phrases
 
 /* ---------- La fumée qui sort de la cheminée (Julien, 19 nov. : comme au refuge) ---------- */
 // La cabane du lac n'a pas de cheminée : on en ajoute une petite sur le toit, de la couleur de la cabane. La fumée monte en
@@ -719,12 +729,12 @@ const FUMEE=(function(){const sc=$('scene'),cab=[...sc.querySelectorAll('path')]
   const ch=document.createElementNS(NS,'rect');[['x',hx+4],['y',hy-24],['width',3.4],['height',8],['fill',cab.getAttribute('fill')]].forEach(([k,v])=>ch.setAttribute(k,v));
   cab.parentNode.insertBefore(ch,cab);
   const vol=[0,1,2].map(()=>{const p=document.createElementNS(NS,'path');[['fill','none'],['stroke','#fff3e6'],['stroke-linecap','round']].forEach(([k,v])=>p.setAttribute(k,v));cab.parentNode.insertBefore(p,cab.nextSibling);return p});
-  return{x:hx+5.7,y:hy-24,s:.75,vol}})();
+  return{x:hx+5.7,y:hy-24,s:.75,vol,niv:0}})();
 function animerFumee(t){if(!FUMEE)return;const{x,y,s}=FUMEE;
   FUMEE.vol.forEach((p,k)=>{const q=(t/6+k/3)%1,bas=y-q*26*s,ecart=Math.sin(t*.7+k*2.1)*3*s*q,ond=6*s*(.6+.4*Math.sin(t*.9+k*1.3)),h=12*s*(.7+.3*q);
     p.setAttribute('d',`M${(x+ecart).toFixed(2)},${bas.toFixed(2)} q${(-ond).toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)} q${ond.toFixed(2)},${(-h/2).toFixed(2)} 0,${(-h).toFixed(2)}`);
-    p.setAttribute('stroke-width',(3*s*(1-.35*q)).toFixed(2));p.setAttribute('opacity',(.75*Math.sin(Math.PI*q)).toFixed(3))})}
-animerFumee(0);
+    p.setAttribute('stroke-width',(3*s*(1-.35*q)).toFixed(2));p.setAttribute('opacity',(.75*FUMEE.niv*Math.sin(Math.PI*q)).toFixed(3))})}
+remettreSoir();animerFumee(0);   // (après la fumée : le soir règle aussi son niveau)
 
 /* ---------- La musique dure jusqu'au bout (même réglage que la forêt de brume) ---------- */
 // Le morceau dure 10 min et commence 3 s plus loin : pour une séance de 10 min, on le ralentit très légèrement (sans changer
