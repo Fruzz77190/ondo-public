@@ -966,7 +966,11 @@ function dessinerCrete(sec){const lvl=sec<0?0:at(Math.max(0,sec)).lvl,p=posB(lvl
   anneaux.forEach(c=>c.setAttribute('opacity',(+c.getAttribute('opacity')*.55).toFixed(3)));
   const cx=anneaux[0].getAttribute('cx'),cy=anneaux[0].getAttribute('cy');
   const disque=[...sv.querySelectorAll('circle[fill="#fbefe4"]')].find(c=>c.getAttribute('cx')===cx&&c.getAttribute('cy')===cy);
-  if(disque)disque.setAttribute('fill','#e6dcd8')});
+  if(!disque)return;disque.setAttribute('fill','#e6dcd8');
+  // lune plus petite (Julien, 19 nov.) : le disque passe aux trois quarts de sa taille, et sa taille d'avant devient un
+  // quatrième anneau de halo, de la même couleur que les autres et un peu plus lumineux (dans la suite .16, .22, .32, .42)
+  const r=+disque.getAttribute('r'),an=anneaux[0].cloneNode();an.setAttribute('r',r);an.setAttribute('opacity',(.42*.55).toFixed(3));
+  disque.before(an);disque.setAttribute('r',(r*.75).toFixed(2))});
 
 /* ---------- Un voile léger et changeant sur la lune (Julien, 19 nov.) ---------- */
 // De fins nuages de nuit, de la couleur du ciel, passent lentement devant la lune : elle est tantôt dégagée, tantôt un peu voilée.
