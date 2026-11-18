@@ -540,11 +540,15 @@ function demarrer(depart=0){
 
 function planifier(g,w,k){
   const l0=g.a,l1=g.b,v0=G.ventNiv(w),v1=G.ventNiv(w+g.d),lv=x=>.03+.06*x,lr=x=>.004+.007*x;
-  // lac de lune (Julien, 19 nov.) : pendant la rétention, ni vent ni gong ; le vent s'éteint en 1 s et revient en 1 s à l'expire
-  if(g.n==='Retiens'){[[G.wind.gain,lv(l0)*v0],[G.rustle.gain,lr(l0)*v0]].forEach(([p,v])=>{p.setValueAtTime(v,w);p.linearRampToValueAtTime(0,w+1);p.setValueAtTime(0,w+g.d)});return}
-  if(g.n==='Expire'){[[G.wind.gain,lv],[G.rustle.gain,lr]].forEach(([p,f])=>{p.setValueAtTime(0,w);p.linearRampToValueAtTime(f(l0)*v0,w+1);follow(p,w+1,g.d-1,f(l0)*v0,f(l1)*v1)})}
-  else{follow(G.wind.gain,w,g.d,lv(l0)*v0,lv(l1)*v1);follow(G.rustle.gain,w,g.d,lr(l0)*v0,lr(l1)*v1)}
-  follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1);
+  // lac de lune (Julien, 19 nov.) : le vent est continu. Il monte avec l'inspire, baisse doucement pendant la rétention sans
+  // jamais s'éteindre (jusqu'à 45 % de son haut), puis repart en 1,5 s pour accompagner l'expire et retombe avec elle.
+  // Pendant la rétention, pas de gong.
+  const RET=.45,haut=lv(1);
+  if(g.n==='Retiens'){[[G.wind.gain,lv],[G.rustle.gain,lr]].forEach(([p,f])=>follow(p,w,g.d,f(1)*v0,f(1)*RET*v1));
+    follow(G.windLp.frequency,w,g.d,980,600);return}
+  if(g.n==='Expire'){[[G.wind.gain,lv],[G.rustle.gain,lr]].forEach(([p,f])=>{follow(p,w,1.5,f(1)*RET*v0,f(.9)*v0);follow(p,w+1.5,g.d-1.5,f(.9)*v0,f(0)*v1)});
+    follow(G.windLp.frequency,w,1.5,600,900);follow(G.windLp.frequency,w+1.5,g.d-1.5,900,280);}
+  else{follow(G.wind.gain,w,g.d,lv(l0)*v0,lv(l1)*v1);follow(G.rustle.gain,w,g.d,lr(l0)*v0,lr(l1)*v1);follow(G.windLp.frequency,w,g.d,280+700*l0,280+700*l1)}
   // le gong entre au 3e cycle : Ré au début de l'inspire, La (sous le Si, Julien 19 nov.) au début de l'expire ;
   // fichiers : re5 = Ré, la4 = La, sol4 = Sol
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
