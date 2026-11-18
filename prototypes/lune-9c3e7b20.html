@@ -119,6 +119,7 @@ button{font-family:inherit;color:inherit}
       <path id="orbA0" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round" opacity=".4"/>
       <path id="orbA1" fill="none" stroke="#ffd27a" stroke-width="7" stroke-linecap="round" opacity=".4"/>
       <path id="orbA2" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round" opacity=".4"/>
+      <path id="orbA3" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round" opacity=".4"/>
       <path id="orbTrace" fill="none" stroke="#fff9f3" stroke-width="7" stroke-linecap="round"/>
       <circle id="halo" cx="273" cy="141" r="22" fill="#ffd27a" opacity=".35"/>
       <path id="bague" fill="none" stroke="#fff9f3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
@@ -380,7 +381,8 @@ try{SC=pfScene($('scene'),'lac',{w:390,h:844,seed:4});SC.breathe(.85);
 /* ---------- Le rythme : inspire 4 s, retiens 5 s, expire 6 s (respiration 4-5-6 de l'app) ---------- */
 const ease=x=>(1-Math.cos(Math.PI*x))/2;
 const clamp=x=>Math.max(0,Math.min(1,x));
-const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Retiens',d:5,a:1,b:1,pill:1},{n:'Expire',d:6,a:1,b:0,pill:2}];
+// une seconde de pause entre l'inspire et la rétention (Julien, 19 nov.)
+const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Pause',d:1,a:1,b:1,pill:0},{n:'Retiens',d:5,a:1,b:1,pill:1},{n:'Expire',d:6,a:1,b:0,pill:2}];
 const T=S.reduce((s,g)=>s+g.d,0);
 const MOTS=['Inspire','Retiens','Expire'];
 const GUIDE=['Inspire par le nez…','Retiens, sans forcer…','Expire longuement…'];
@@ -554,10 +556,12 @@ function planifier(g,w,k){
   // le gong entre au 3e cycle : Ré au début de l'inspire, La (sous le Si, Julien 19 nov.) au début de l'expire ;
   // fichiers : re5 = Ré, la4 = La, sol4 = Sol
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
-    let suivante=w+g.d,j=k+1;while(S[j%S.length].n==='Retiens'){suivante+=S[j%S.length].d;j++}
+    let suivante=w+g.d,j=k+1;while(S[j%S.length].n!=='Inspire'&&S[j%S.length].n!=='Expire'){suivante+=S[j%S.length].d;j++}
+    // l'inspire : le gong continue de s'effacer pendant la seconde de pause, jusqu'au début de la rétention
+    const apres=S[(k+1)%S.length],finPh=w+g.d+(apres.n==='Pause'?apres.d:0);
     // un cycle sur deux (Julien, 19 nov.) : Do à l'inspire, Sol à l'expire ; sinon Ré et La
     const c=Math.floor(k/S.length)-GONG_CYCLE,alt=c%2===1;
-    try{frapper(g.n==='Inspire'?(alt?'do5':'re5'):(alt?'sol4':'la4'),w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    try{frapper(g.n==='Inspire'?(alt?'do5':'re5'):(alt?'sol4':'la4'),w,suivante,null,1,finPh)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -630,7 +634,8 @@ const DEBUTS=S.map((_,k)=>S.slice(0,k).reduce((t,g)=>t+g.d,0));
 const ptO=a=>`${(ORB.cx+ORB.r*Math.cos(a)).toFixed(2)},${(ORB.cy+ORB.r*Math.sin(a)).toFixed(2)}`;
 const arcO=(a0,a1)=>`M${ptO(a0)} A${ORB.r},${ORB.r} 0 ${a1-a0>Math.PI?1:0} 1 ${ptO(a1)}`;
 const angleO=avant=>-Math.PI/2+(avant/T)*2*Math.PI;
-S.forEach((g,k)=>$('orbA'+k).setAttribute('d',arcO(angleO(DEBUTS[k])+ECART,angleO(DEBUTS[k]+g.d)-ECART)));
+// un arc par phase : doré pour la rétention, crème pour les autres (la seconde de pause a son petit arc crème)
+S.forEach((g,k)=>{const e=$('orbA'+k);e.setAttribute('d',arcO(angleO(DEBUTS[k])+ECART,angleO(DEBUTS[k]+g.d)-ECART));e.setAttribute('stroke',g.n==='Retiens'?'#ffd27a':'#fff9f3')});
 function anneauO(x,y,p){const n=Math.max(1,Math.ceil(48*p));let d=`M${x.toFixed(2)},${(y-RAYON_ANNEAU).toFixed(2)}`;
   for(let i=1;i<=n;i++){const a=-Math.PI/2+2*Math.PI*p*(i/n);d+=` L${(x+RAYON_ANNEAU*Math.cos(a)).toFixed(2)},${(y+RAYON_ANNEAU*Math.sin(a)).toFixed(2)}`}return d}
 function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),t=sec<0?0:s.p*s.g.d;
