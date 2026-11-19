@@ -1001,18 +1001,26 @@ const KOALAS=(function(){const sc=$('scene'),grain=[...sc.children].find(e=>e.ta
     mkB(profil,'ellipse',{cx:-.6,cy:-7,rx:2.4,ry:3,fill:'#3a3433'});
     mkB(profil,'circle',{cx:3.2,cy:-10,r:1,fill:'#2a2524'});
     // … et tournée vers nous
+    // … de trois quarts (Julien, 20 nov. : la tête tourne en passant par cette vue, au lieu de s'aplatir) …
+    const troisQuarts=mkB(k,'g',{opacity:0});
+    mkB(troisQuarts,'circle',{cx:-.6,cy:-12.6,r:4,fill:clair});mkB(troisQuarts,'circle',{cx:-.6,cy:-12.6,r:2.1,fill:'#ece6e3'});
+    mkB(troisQuarts,'circle',{cx:11.6,cy:-13,r:4.6,fill:clair});mkB(troisQuarts,'circle',{cx:11.6,cy:-13,r:2.5,fill:'#ece6e3'});
+    mkB(troisQuarts,'circle',{cx:5.2,cy:-8.4,r:7.7,fill:clair});
+    mkB(troisQuarts,'ellipse',{cx:1.9,cy:-6.8,rx:2.3,ry:3,fill:'#3a3433'});
+    mkB(troisQuarts,'circle',{cx:.4,cy:-10,r:.85,fill:'#2a2524'});mkB(troisQuarts,'circle',{cx:5.8,cy:-10.4,r:1,fill:'#2a2524'});
+    // … et tournée vers nous
     const face=mkB(k,'g',{opacity:0});
     [-1,1].forEach(c=>{mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:4.6,fill:clair});mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:2.5,fill:'#ece6e3'})});
     mkB(face,'circle',{cx:6,cy:-8,r:7.8,fill:clair});
     mkB(face,'ellipse',{cx:6,cy:-6.5,rx:2.3,ry:3,fill:'#3a3433'});
     [-1,1].forEach(c=>mkB(face,'circle',{cx:6+c*3.3,cy:-10,r:1,fill:'#2a2524'}));
-    return{pos,x,dec,bras,profil,face}})})();
+    return{pos,x,dec,bras,profil,troisQuarts,face}})})();
 // (Julien, 19 nov.) : ils se déplacent plus lentement (32 s pour monter ou descendre, 8 à 9 s d'arrêt) ; au début, seul le koala
 // de gauche est là (il part d'en bas) ; à 1 min 30, celui de droite arrive par le haut, descend jusqu'à sa place, s'arrête,
 // puis vit sa vie. À chaque arrêt, la tête se tourne vers nous en douceur (le profil s'amincit, puis la face s'élargit),
 // reste tournée, puis revient : 5 s en tout.
 const adoucirK=x=>x*x*(3-2*x),C_K=81,ARRIVEE_D=90,DESCENTE_ARRIVEE=16;
-function teteK(u,debut){const v=u-debut;if(v<0||v>5)return 0;return v<1.2?adoucirK(v/1.2):v<3.8?1:adoucirK((5-v)/1.2)}
+function teteK(u,debut){const v=u-debut;if(v<0||v>5)return 0;return v<1.5?adoucirK(v/1.5):v<3.5?1:adoucirK((5-v)/1.5)}
 // u dans le cycle : montée 0-32, arrêt en haut 32-40, descente 40-72, arrêt en bas 72-81
 function cycleK(u){u=((u%C_K)+C_K)%C_K;if(u<32)return{h:adoucirK(u/32),tete:0,bouge:true};if(u<40)return{h:1,tete:teteK(u,33),bouge:false};
   if(u<72)return{h:1-adoucirK((u-40)/32),tete:0,bouge:true};return{h:0,tete:teteK(u,73),bouge:false}}
@@ -1023,13 +1031,14 @@ function etatsKoalas(el){const e=Math.max(0,el);
   else{const v=el-ARRIVEE_D;if(v<DESCENTE_ARRIVEE){droite={y:-60+(yK(1)+60)*adoucirK(v/DESCENTE_ARRIVEE),tete:0,bouge:true,vis:1}}
     else{const D=cycleK(v-DESCENTE_ARRIVEE+32);droite={y:yK(D.h),tete:D.tete,bouge:D.bouge,vis:1}}}
   return[gauche,droite]}
-function tourner(g,sx){g.setAttribute('transform',`translate(6 -9) scale(${Math.max(.02,sx).toFixed(3)} 1) translate(-6 9)`)}
 function koalas(el){const t=performance.now()/1000,E=etatsKoalas(el);KOALAS.forEach((K,i)=>{const e=E[i];
   K.pos.setAttribute('opacity',e.vis);const bal=e.bouge?Math.sin(t*2.4+i)*3:0;
   K.pos.setAttribute('transform',`translate(${K.x} ${e.y.toFixed(1)}) rotate(${bal.toFixed(2)})`);
   const a=e.bouge?Math.sin(t*2.4+i)*2.5:0;K.bras.setAttribute('d',`M7,-1 Q1,${(2+a).toFixed(1)} -2,${(1+a*.4).toFixed(1)}`);
   // la tête qui tourne : le profil s'amincit jusqu'au milieu du mouvement, puis la face s'élargit
-  const q=e.tete;K.profil.setAttribute('opacity',q<.5?1:0);K.face.setAttribute('opacity',q<.5?0:1);tourner(K.profil,1-2*q);tourner(K.face,2*q-1)})}
+  // la tête tourne en trois temps : profil → trois quarts → face (fondus enchaînés), puis revient de la même façon
+  const q=e.tete,qa=Math.min(1,q*2),qb=Math.max(0,q*2-1);
+  K.profil.setAttribute('opacity',(1-qa).toFixed(3));K.troisQuarts.setAttribute('opacity',(q<.5?qa:1-qb).toFixed(3));K.face.setAttribute('opacity',qb.toFixed(3))})}
 
 /* ---------- Les feuilles des bambous bougent doucement à l'inspiration (Julien, 19 nov.) ---------- */
 // Elles se soulèvent un peu à l'inspiration (jusqu'à 5°), frémissent légèrement pendant qu'elle dure, et redescendent à l'expiration.
