@@ -814,13 +814,13 @@ function build(t0){
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
-  // le même niveau que le vent de la vallée de l'aube ; quand la musique s'efface (30 s avant la fin, en 8 s), le vent baisse de moitié (Julien, 20 nov.)
-  g.ventNiv=t=>{const a=t0+sess.total-30,x=t<=a?0:Math.min(1,(t-a)/8);return 1.58*.8*.5*1.5*1.1*(1-.5*x)};
+  // le même niveau que le vent de la vallée de l'aube ; quand la musique s'efface (35 s avant la fin, en 15 s), le vent baisse de moitié (Julien, 20 nov.)
+  g.ventNiv=t=>{const a=t0+sess.total-35,x=t<=a?0:Math.min(1,(t-a)/15);return 1.58*.8*.5*1.5*1.1*(1-.5*x)};
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
-    // 30 s avant la fin, la musique s'efface en 8 s : la fin se fait avec la pluie et le vent seuls (Julien, 20 nov.)
-    g.musOn.gain.setValueAtTime(1,t0+sess.total-30);g.musOn.gain.linearRampToValueAtTime(0,t0+sess.total-22);
+    // 35 s avant la fin, la musique s'efface en 15 s : la fin se fait avec la pluie et le vent seuls (Julien, 20 nov.)
+    g.musOn.gain.setValueAtTime(1,t0+sess.total-35);g.musOn.gain.linearRampToValueAtTime(0,t0+sess.total-20);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
