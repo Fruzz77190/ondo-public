@@ -534,7 +534,7 @@ function demarrer(depart=0){
   clock.audio=son;clock.pauseAt=null;
   const t=son?ctx.currentTime:0;if(!son)passerHorlogeTel(0);
   // depart > 0 (outil de test) : la séance reprend directement à ce moment, sans le décompte
-  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T,c0=Math.floor(depart/T);
+  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T+S[0].d,c0=Math.floor(depart/T);
   sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
   if(son){try{G=build(t0);decoderGongs();regleMusique(total);
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle

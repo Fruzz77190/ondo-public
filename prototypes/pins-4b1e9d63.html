@@ -439,7 +439,7 @@ const NIV={musique:.239,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Col des pins (Julien, 19 nov.) : la musique du lac des cimes dès le début, qui monte progressivement sur la 1re inspire et la 1re rétention ;
 // le vent au 2e cycle, le gong au 3e. La musique commence 3 s dans le morceau (son début est silencieux).
-const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=S[0].d+S[1].d,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=0;   // la musique monte de rien jusqu'à son plein volume sur la 1re inspire et la 1re rétention (Julien, 19 nov.)
+const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=2+S[0].d+S[1].d,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=0;   // la musique monte de rien jusqu'à son plein volume sur la 1re inspire et la 1re rétention (Julien, 19 nov.)
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -449,7 +449,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['la','do5','fa5','re5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['la','do5','fa5','re5','mi5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -486,7 +486,7 @@ function build(t0){
   g.ventNiv=t=>1.58*.8*.5*1.5*1.1*1.5;   // le vent de la vallée de l'aube, +50 % (Julien, 19 nov.)
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
-  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
@@ -535,13 +535,13 @@ function demarrer(depart=0){
   clock.audio=son;clock.pauseAt=null;
   const t=son?ctx.currentTime:0;if(!son)passerHorlogeTel(0);
   // depart > 0 (outil de test) : la séance reprend directement à ce moment, sans le décompte
-  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T,c0=Math.floor(depart/T);
+  const t0=depart>0?t-depart:t+3.2,cycles=Math.ceil(duree*60/T),total=cycles*T+S[0].d,c0=Math.floor(depart/T);
   sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
   if(son){try{G=build(t0);decoderGongs();regleMusique(total);
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
-      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=Math.max(0,MUS_OFF-3.2*(sess.vitMus||1))}catch(e){}});sess.musDep=true;
+      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=Math.max(0,MUS_OFF-(3.2+MUS_DE)*(sess.vitMus||1))}catch(e){}});sess.musDep=true;
       if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
-        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){el.currentTime=MUS_OFF+depart*(sess.vitMus||1);sess.musDep=true}else el.currentTime=depart+3.2}catch(e){}})}
+        LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){el.currentTime=MUS_OFF+(depart-MUS_DE)*(sess.vitMus||1);sess.musDep=true}else el.currentTime=depart+3.2}catch(e){}})}
       jouerMedias()}
     catch(e){G=null;sess.son=false;passerHorlogeTel(t);toast('Son : '+e.message,8000)}}
   try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>{if(sess)sess.wake=w}).catch(()=>{})}catch(e){}
@@ -581,7 +581,7 @@ function tick(){
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['fa5',.2],['re5',2.8],['do5',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['fa5',.2],['mi5',2.8],['do5',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
@@ -654,6 +654,19 @@ function soleil(lvl){if(!SC)return;SC.breathe(lvl);const g=$('scene').querySelec
   [...g.children].forEach(r=>{const c=r.cloneNode(true);c.setAttribute('x',(+r.getAttribute('x')-390).toFixed(1));g.appendChild(c)})})();
 function animerCiel(el,lvl){const g=document.querySelector('#scene .pfclouds');if(!g)return;
   g.setAttribute('transform',`translate(${(lvl*6+(el>0?(el*6)%390:0)).toFixed(2)},0)`)}
+
+/* ---------- Des oiseaux aussi dans le haut du ciel (Julien, 19 nov.) ---------- */
+// En plus des vols de la vallée de l'aube (au milieu du ciel et entre les nuages), un ou deux oiseaux passent de temps en temps
+// tout en haut, au-dessus du carré : le premier vers 22 s, puis toutes les 35 à 55 s, dans un sens ou dans l'autre.
+let volHautPaths=null;
+function volHaut(el){
+  if(!volHautPaths)volHautPaths=[0,1].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    [['fill','none'],['stroke','#b4583a'],['stroke-width','1.5'],['stroke-linecap','round'],['stroke-linejoin','round'],['opacity','0']].forEach(([k,v])=>p.setAttribute(k,v));$('volG').appendChild(p);return p});
+  if(el<0||!sess){volHautPaths.forEach(p=>p.setAttribute('opacity','0'));return}
+  if(!sess.volsHaut){const v=[];let t=22+Math.random()*6;while(t<720){const dur=20+Math.random()*5;
+      v.push({t,dur,dir:Math.random()<.5?1:-1,y:120+Math.random()*70,s:.85+Math.random()*.25,deux:Math.random()<.4,ph:Math.random()*6.28});t+=dur+35+Math.random()*20}sess.volsHaut=v}
+  const f=sess.volsHaut.find(v=>el>=v.t&&el<v.t+v.dur+1.2);
+  [0,1].forEach(i=>{const p=volHautPaths[i];if(!f||(i===1&&!f.deux))p.setAttribute('opacity','0');else poserOiseau(p,el,f,i,5)})}
 
 /* ---------- Les bourrasques (Julien, 19 nov.) ---------- */
 // Par moments, un coup de vent traverse le col de gauche à droite : environ un sapin sur deux se penche vers la droite, l'un après
@@ -750,11 +763,11 @@ function frame(){
     if(guide.textContent!==GUIDE[s.g.pill])guide.textContent=GUIDE[s.g.pill];
     const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;[0,1,2,3].forEach(i=>$('ph'+i).classList.toggle('on',s.g.pill===i))}
-    dessinerCrete(Math.max(0,el-.001));soleil(s.lvl);animerCiel(el,s.lvl);vol(el);bourrasque(el);
+    dessinerCrete(Math.max(0,el-.001));soleil(s.lvl);animerCiel(el,s.lvl);vol(el);volHaut(el);bourrasque(el);
   }else if(!sess.fin){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
-    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);vol(-1);
+    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);vol(-1);volHaut(-1);
     ecrireDoux(MESSAGE_FIN,true);
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
     sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
