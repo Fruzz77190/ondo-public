@@ -119,9 +119,9 @@ button{font-family:inherit;color:inherit}
       <line id="ombre2" stroke="rgba(40,30,15,.45)" stroke-width="16" stroke-linecap="round"/>
       <line id="ombre3" stroke="rgba(40,30,15,.45)" stroke-width="16" stroke-linecap="round"/>
       <line id="cote0" stroke="#fff9f3" stroke-width="10" stroke-linecap="round" opacity=".75"/>
-      <line id="cote1" stroke="#ffd27a" stroke-width="10" stroke-linecap="round" opacity=".75"/>
+      <line id="cote1" stroke="#fff9f3" stroke-width="10" stroke-linecap="round" opacity=".75"/>
       <line id="cote2" stroke="#fff9f3" stroke-width="10" stroke-linecap="round" opacity=".75"/>
-      <line id="cote3" stroke="#ffd27a" stroke-width="10" stroke-linecap="round" opacity=".75"/>
+      <line id="cote3" stroke="#fff9f3" stroke-width="10" stroke-linecap="round" opacity=".75"/>
       <path id="traceC" fill="none" stroke="#fff9f3" stroke-width="11" stroke-linecap="round"/>
       <circle id="halo" cx="50" cy="515" r="30" fill="#ffd27a" opacity=".5"/>
       <path id="bague" fill="none" stroke="#fff9f3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
@@ -777,7 +777,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('pluie').el.loop=true;media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['si4','dod5','la4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['las4','do5','res5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -887,11 +887,11 @@ function planifier(g,w,k){
   else follow(G.wind.gain,w,g.d,a*v0,b*v1);
   follow(G.rustle.gain,w,g.d,a*v0*.11,b*v1*.11);
   const f=g.n==='Inspire'?[280,980]:g.n==='Expire'?[650,280]:haut?[980,650]:[280,240];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
-  // le gong entre au 3e cycle : Si au début de l'inspire (un cycle sur trois, Do dièse, un ton plus haut, comme au col des pins),
-  // La au début de l'expire ; pendant les rétentions, pas de gong. Musique en mi majeur. Fichiers : si4, dod5, la4.
+  // le gong entre au 3e cycle : La dièse au début de l'inspire (un cycle sur trois, Do, un ton plus haut, comme au col des pins),
+  // Ré dièse aigu au début de l'expire (Julien, 19 nov.) ; pendant les rétentions, pas de gong. Fichiers : las4, do5, res5.
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
-    const suivante=w+g.d+S[(k+1)%S.length].d,c=Math.floor(k/S.length)-GONG_CYCLE,noteIn=c%3===2?'dod5':'si4';
-    try{frapper(g.n==='Inspire'?noteIn:'la4',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    const suivante=w+g.d+S[(k+1)%S.length].d,c=Math.floor(k/S.length)-GONG_CYCLE,noteIn=c%3===2?'do5':'las4';
+    try{frapper(g.n==='Inspire'?noteIn:'res5',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -906,7 +906,7 @@ function tick(){
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['dod5',.2],['si4',2.8],['la4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['res5',.2],['do5',2.8],['las4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
@@ -967,9 +967,10 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),k=sec<0?0:s.k%4,p=s
   ['halo','point'].forEach(id=>{$(id).setAttribute('cx',x.toFixed(2));$(id).setAttribute('cy',y.toFixed(2))});
   const r=sec>=0&&s.g.n==='Retiens'?p:-1;$('bague').setAttribute('d',anneauC(x,y,Math.max(0,r)));$('bague').setAttribute('opacity',r>0?.95:0)}
 
-/* ---------- Les deux koalas, chacun sur un bambou, à gauche et à droite (Julien, 19 nov.) ---------- */
-// Deux bambous au premier plan, de part et d'autre du carré ; sur chacun, un koala gris qui monte doucement, s'arrête un moment,
-// redescend, s'arrête… (environ 20 s pour monter ou descendre, 5 à 7 s de pause), en se tortillant un peu quand il grimpe.
+/* ---------- Les deux koalas, de profil, chacun sur un bambou, à gauche et à droite (Julien, 19 nov.) ---------- */
+// Deux bambous au premier plan, de part et d'autre du carré ; sur chacun, un koala gris vu de profil, agrippé au bambou, qui monte
+// doucement, s'arrête, redescend, s'arrête… (environ 20 s pour monter ou descendre, 6 à 7 s de pause), en se tortillant un peu
+// quand il grimpe. À chaque arrêt, il tourne la tête vers nous pendant 5 s, puis la retourne vers le bambou.
 // Les deux ne vont pas au même rythme.
 const NSV='http://www.w3.org/2000/svg';
 function mkB(p,n,a){const e=document.createElementNS(NSV,n);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
@@ -980,26 +981,42 @@ const KOALAS=(function(){const sc=$('scene'),grain=[...sc.children].find(e=>e.ta
     mkB(g,'rect',{x:x-4.5,y:-10,width:9,height:844*.92,fill:'#6e7240'});
     for(let j=1;j<9;j++)mkB(g,'rect',{x:x-5,y:j*844*.11,width:10,height:1.8,fill:'#fcf1e4',opacity:.35});
     [[.18,-1],[.33,1],[.47,-1],[.62,1]].forEach(([yy,sd])=>mkB(g,'path',{d:`M${x},${844*yy} q${sd*7},-6 ${sd*16},-2 q${-sd*6},4 ${-sd*16},2 Z`,fill:'#6e7240'}));
-    // le koala, accroché au bambou (dessiné autour de 0,0, puis déplacé)
-    const k=mkB(g,'g',{});const gris='#8f8a8b',clair='#a6a1a2',ventre='#c9c3c2';
-    mkB(k,'ellipse',{cx:0,cy:6,rx:8.5,ry:11.5,fill:gris});
-    mkB(k,'ellipse',{cx:0,cy:8,rx:5,ry:7.5,fill:ventre});
-    const brasG=mkB(k,'path',{d:'M-6,0 Q-11,4 -3,7',fill:'none',stroke:gris,'stroke-width':4,'stroke-linecap':'round'});
-    const brasD=mkB(k,'path',{d:'M6,0 Q11,4 3,7',fill:'none',stroke:gris,'stroke-width':4,'stroke-linecap':'round'});
-    mkB(k,'path',{d:'M-6,15 Q-10,19 -3,21',fill:'none',stroke:gris,'stroke-width':4,'stroke-linecap':'round'});
-    mkB(k,'path',{d:'M6,15 Q10,19 3,21',fill:'none',stroke:gris,'stroke-width':4,'stroke-linecap':'round'});
-    [-1,1].forEach(c=>{mkB(k,'circle',{cx:c*7.5,cy:-12,r:5,fill:clair});mkB(k,'circle',{cx:c*7.5,cy:-12,r:2.8,fill:'#ece6e3'})});
-    mkB(k,'circle',{cx:0,cy:-8,r:8,fill:clair});
-    mkB(k,'ellipse',{cx:0,cy:-6.5,rx:2.3,ry:3.1,fill:'#3a3433'});
-    [-1,1].forEach(c=>mkB(k,'circle',{cx:c*3.4,cy:-10,r:1,fill:'#2a2524'}));
-    return{k,x,dec,sens,brasG,brasD}})})();
-// position (0 = bas, 1 = haut) au fil du temps : montée 20 s, pause 6 s, descente 20 s, pause 7 s
-function hauteurKoala(t){const c=53,u=((t%c)+c)%c;if(u<20)return adoucirK(u/20);if(u<26)return 1;if(u<46)return 1-adoucirK((u-26)/20);return 0}
+    // le koala de profil, tourné vers le bambou (dessiné autour de 0,0 avec le bambou à droite, retourné pour celui de droite)
+    const pos=mkB(g,'g',{}),k=mkB(pos,'g',{transform:`scale(${-sens},1)`}),gris='#8f8a8b',clair='#a6a1a2',ventre='#c9c3c2';
+    mkB(k,'ellipse',{cx:7,cy:6,rx:7,ry:11,fill:gris});
+    mkB(k,'ellipse',{cx:4.5,cy:8,rx:3,ry:7,fill:ventre});
+    mkB(k,'path',{d:'M8,15 Q2,19 -2,17',fill:'none',stroke:gris,'stroke-width':4.2,'stroke-linecap':'round'});
+    const bras=mkB(k,'path',{d:'M7,-1 Q1,2 -2,1',fill:'none',stroke:gris,'stroke-width':4.2,'stroke-linecap':'round'});
+    // la tête de profil (vers le bambou)…
+    const profil=mkB(k,'g',{});
+    mkB(profil,'circle',{cx:11,cy:-13,r:4.6,fill:clair});mkB(profil,'circle',{cx:11,cy:-13,r:2.5,fill:'#ece6e3'});
+    mkB(profil,'circle',{cx:6,cy:-8,r:7.5,fill:clair});
+    mkB(profil,'ellipse',{cx:-.6,cy:-7,rx:2.4,ry:3,fill:'#3a3433'});
+    mkB(profil,'circle',{cx:3.2,cy:-10,r:1,fill:'#2a2524'});
+    // … et tournée vers nous
+    const face=mkB(k,'g',{opacity:0});
+    [-1,1].forEach(c=>{mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:4.6,fill:clair});mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:2.5,fill:'#ece6e3'})});
+    mkB(face,'circle',{cx:6,cy:-8,r:7.8,fill:clair});
+    mkB(face,'ellipse',{cx:6,cy:-6.5,rx:2.3,ry:3,fill:'#3a3433'});
+    [-1,1].forEach(c=>mkB(face,'circle',{cx:6+c*3.3,cy:-10,r:1,fill:'#2a2524'}));
+    return{pos,x,dec,bras,profil,face}})})();
+// position (0 = bas, 1 = haut) au fil du temps : montée 20 s, pause 6 s, descente 20 s, pause 7 s ; et la tête tournée (0 à 1)
 const adoucirK=x=>x*x*(3-2*x);
-function koalas(t){KOALAS.forEach((K,i)=>{const tt=t+K.dec*5.3,h=hauteurKoala(tt),bouge=Math.abs(hauteurKoala(tt+.2)-h)>.0005;
-  const y=844*(.72-.34*h),bal=bouge?Math.sin(tt*3.2)*4:0;
-  K.k.setAttribute('transform',`translate(${K.x} ${y.toFixed(1)}) rotate(${bal.toFixed(2)})`);
-  const a=bouge?Math.sin(tt*3.2)*3:0;K.brasG.setAttribute('d',`M-6,0 Q-11,${(4+a).toFixed(1)} -3,7`);K.brasD.setAttribute('d',`M6,0 Q11,${(4-a).toFixed(1)} 3,7`)})}
+function etatKoala(t){const c=53,u=((t%c)+c)%c;let h,tete=0;
+  if(u<20)h=adoucirK(u/20);else if(u<26){h=1;tete=Math.min(1,(u-20.5)/.6,(25.5-u)/.6)}else if(u<46)h=1-adoucirK((u-26)/20);else{h=0;tete=Math.min(1,(u-46.5)/.6,(51.5-u)/.6)}
+  return{h,tete:Math.max(0,tete)}}
+function koalas(t){KOALAS.forEach(K=>{const tt=t+K.dec*5.3,e=etatKoala(tt),bouge=Math.abs(etatKoala(tt+.2).h-e.h)>.0005;
+  const y=844*(.72-.34*e.h),bal=bouge?Math.sin(tt*3.2)*3:0;
+  K.pos.setAttribute('transform',`translate(${K.x} ${y.toFixed(1)}) rotate(${bal.toFixed(2)})`);
+  const a=bouge?Math.sin(tt*3.2)*2.5:0;K.bras.setAttribute('d',`M7,-1 Q1,${(2+a).toFixed(1)} -2,${(1+a*.4).toFixed(1)}`);
+  K.face.setAttribute('opacity',e.tete.toFixed(3));K.profil.setAttribute('opacity',(1-e.tete).toFixed(3))})}
+
+/* ---------- Les feuilles des bambous bougent doucement à l'inspiration (Julien, 19 nov.) ---------- */
+// Elles se soulèvent un peu à l'inspiration (jusqu'à 5°), frémissent légèrement pendant qu'elle dure, et redescendent à l'expiration.
+const FEUILLES=[...$('scene').querySelectorAll('path[transform^="rotate("]')].map((p,i)=>{const m=/rotate\(([-\d.]+) ([-\d.]+) ([-\d.]+)\)/.exec(p.getAttribute('transform'));
+  return m?{p,r:+m[1],x:+m[2],y:+m[3],sens:+m[1]>90?1:-1,ph:i*1.37}:null}).filter(Boolean);
+function feuilles(s,el){const t=performance.now()/1000,insp=s.g.n==='Inspire'?Math.sin(Math.PI*s.p):0;
+  FEUILLES.forEach(f=>{const a=f.sens*(5*s.lvl+1.5*insp*Math.sin(t*2.4+f.ph));f.p.setAttribute('transform',`rotate(${(f.r+a).toFixed(2)} ${f.x} ${f.y})`)})}
 
 /* ---------- La pluie, à partir de 2 minutes (Julien, 19 nov.) ---------- */
 // De fines gouttes tombent en biais sur tout le paysage, devant les bambous ; elles apparaissent en 8 s à partir de 2 minutes
@@ -1051,7 +1068,7 @@ function frame(){
     if(guide.textContent!==GUIDE[s.g.pill])guide.textContent=GUIDE[s.g.pill];
     const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;[0,1,2,3].forEach(i=>$('ph'+i).classList.toggle('on',s.g.pill===i))}
-    dessinerCrete(Math.max(0,el-.001));
+    dessinerCrete(Math.max(0,el-.001));feuilles(s,el);
   }else if(!sess.fin){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
