@@ -768,6 +768,8 @@ const NIV={musique:.239,gong:.906,pluie:.28};   // cigales encore -50 % (Julien,
 // qui monte jusqu'à la fin de la 1re rétention ; le vent au 2e cycle, le gong au 3e ; la pluie à 2 minutes, discrète, jusqu'à la fin.
 // La musique commence 3 s dans le morceau (son début est silencieux). La pluie (90 s) est chargée en mémoire et tourne en boucle
 // comme les gongs : la musique reste le seul long fichier lu par le téléphone (sur iPhone, deux lecteurs à la fois la coupaient).
+// passages du morceau en Fa (en secondes dans le fichier, mesurés)
+const PASSAGES_FA=[[54.2,70.9],[126,141.7],[198.4,214.3],[270.4,283.3],[337.5,354.1],[409.2,425],[481.6,497.4],[553.7,566.5]];
 const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=2+S[0].d+S[1].d,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=0,PLUIE_DE=120,PLUIE_FONDU=8;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
@@ -778,7 +780,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['las4','do5','res5','sold4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['las4','do5','res5','sold4','si4','mi5','la4','dod5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -892,7 +894,10 @@ function planifier(g,w,k){
   // pendant les rétentions, pas de gong. Fichiers : las4, res5, sold4, do5.
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
     const suivante=w+g.d+S[(k+1)%S.length].d,c=Math.floor(k/S.length)-GONG_CYCLE,autre=c%3===2;
-    try{frapper(g.n==='Inspire'?(autre?'sold4':'las4'):(autre?'do5':'res5'),w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    // la musique alterne entre Mi et Fa (un demi-ton plus haut) : dans les passages en Fa, toutes les notes montent d'un demi-ton,
+    // pour garder les mêmes écarts (Julien, 19 nov.) : Si / Mi, et un cycle sur trois La / Do dièse
+    const pos=MUS_OFF+(w-sess.t0-MUS_DE)*(sess.vitMus||1),fa=PASSAGES_FA.some(([d,f])=>pos>=d&&pos<f);
+    try{frapper(g.n==='Inspire'?(autre?(fa?'la4':'sold4'):(fa?'si4':'las4')):(autre?(fa?'dod5':'do5'):(fa?'mi5':'res5')),w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -1034,12 +1039,12 @@ function feuilles(s,el){const t=performance.now()/1000,insp=s.g.n==='Inspire'?Ma
   FEUILLES.forEach(f=>{const a=f.sens*(5*s.lvl+1.5*insp*Math.sin(t*2.4+f.ph));f.p.setAttribute('transform',`rotate(${(f.r+a).toFixed(2)} ${f.x} ${f.y})`)})}
 
 /* ---------- La pluie, à partir de 2 minutes (Julien, 19 nov.) ---------- */
-// De fines gouttes tombent en biais sur tout le paysage, devant les bambous ; elles apparaissent en 8 s à partir de 2 minutes
+// De fines gouttes (deux fois moins nombreuses, Julien 19 nov.) tombent en biais sur tout le paysage, devant les bambous ; elles apparaissent en 8 s à partir de 2 minutes
 // (en même temps que le son de la pluie), puis la pluie continue jusqu'à la fin.
 const PLUIE=(function(){const sc=$('scene'),grain=[...sc.children].find(e=>e.tagName==='rect'&&e.getAttribute('filter'));
   const g=document.createElementNS(NSV,'g');g.setAttribute('opacity',0);g.setAttribute('pointer-events','none');sc.insertBefore(g,grain||null);
   let g0=5;const rnd=()=>{g0=(g0*16807)%2147483647;return g0/2147483647};
-  const gouttes=[...Array(70)].map(()=>{const l=mkB(g,'line',{stroke:'#ffffff','stroke-width':1.1,'stroke-linecap':'round',opacity:(.25+rnd()*.2).toFixed(2)});
+  const gouttes=[...Array(35)].map(()=>{const l=mkB(g,'line',{stroke:'#ffffff','stroke-width':1.1,'stroke-linecap':'round',opacity:(.25+rnd()*.2).toFixed(2)});
     return{l,x:rnd()*430-20,y0:rnd()*900,v:430+rnd()*120,L:12+rnd()*8}});return{g,gouttes}})();
 function pluie(el,t){const a=el<120?0:Math.min(1,(el-120)/8);PLUIE.g.setAttribute('opacity',a.toFixed(3));if(!a)return;
   PLUIE.gouttes.forEach(d=>{const y=((d.y0+t*d.v)%900)-30,x=d.x-(y+30)*.12;
