@@ -50,7 +50,11 @@ button{font-family:inherit;color:inherit}
 .doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
 @keyframes entier{to{opacity:1}}
 /* temple : les textes au-dessus du torii, qui est descendu juste au-dessus de l'encadré du bas */
-#phaseBox{top:104px}
+#phaseBox{top:var(--phaseY,104px)}
+/* la guidance et les phrases entre la base du temple et le haut du torii, sur une ligne (version courte, comme la vallée de l'aube) */
+#phaseBox .zone{position:absolute;left:0;right:0;top:var(--zoneY,200px);transform:translateY(-50%);max-width:none;padding:0 14px}
+#doux{white-space:nowrap;line-height:1.35}
+#word{font-size:calc(46px*var(--tf,1));line-height:calc(56px*var(--tf,1))}#word.chiffre{font-size:calc(54px*var(--tf,1));line-height:calc(116px*var(--tf,1))}#count{font-size:calc(54px*var(--tf,1));line-height:calc(60px*var(--tf,1))}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -714,16 +718,16 @@ const MOTS=['Inspire','Retiens','Expire'];
 const GUIDE=['Inspire…','Marque une pause, comme sous le torii…','Expire…'];
 // Les messages doux, écrits seulement : chacun reste 10 secondes, dans tous les lieux (Julien, 18 nov. 2026).
 const MESSAGES=[
-  {de:60,a:70,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
-  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
+  {de:60,a:70,texte:'Tu peux fermer les yeux et suivre le gong'},
+  {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider'},
   // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
-  {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
-  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose.'},
-  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer."},
-  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
-  {de:420,a:430,texte:"Chaque inspiration t'apporte un peu plus de calme."},
-  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise."},
-  {de:540,a:550,texte:'Encore quelques respirations, savoure ce moment.'}
+  {de:180,a:190,texte:"Chaque expiration t'allège un peu plus"},
+  {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose'},
+  {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer"},
+  {de:360,a:370,texte:"Si ton esprit s'échappe, reviens au gong"},
+  {de:420,a:430,texte:"Chaque inspiration t'apporte du calme"},
+  {de:480,a:490,texte:"Ton corps se détend, ton esprit s'apaise"},
+  {de:540,a:550,texte:'Encore un peu, savoure ce moment'}
 ];
 function at(sec){let t=((sec%T)+T)%T,k=0;while(t>=S[k].d){t-=S[k].d;k++}const g=S[k],p=t/g.d;return{k,g,p,lvl:g.a+(g.b-g.a)*ease(p),left:Math.ceil(g.d-t-1e-9)}}
 const mmss=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -990,9 +994,9 @@ function refaireTemple(svg,W,H){const kids=[...svg.children],grainR=kids.find(e=
   mkT(g,'circle',{cx:X(sx),cy:Y(sy),r:sr.toFixed(1),fill:'#e9775a'});
   // la chaîne lointaine
   mkT(g,'path',{d:`M-10,${H} L-10,${Y(.50)} C${P(.1,.48)} ${P(.2,.43)} ${P(.3,.44)} C${P(.38,.45)} ${P(.44,.47)} ${P(.5,.47)} C${P(.58,.47)} ${P(.66,.43)} ${P(.76,.42)} C${P(.86,.41)} ${P(.94,.46)} ${W+10},${Y(.48)} L${W+10},${H} Z`,fill:'#ecd2a8'});
-  // la montagne sacrée, au centre : son sommet clair apparaît juste au-dessus du torii
-  mkT(g,'path',{d:`M-10,${H} L-10,${Y(.62)} C${P(.14,.60)} ${P(.28,.53)} ${P(.36,.45)} C${P(.41,.40)} ${P(.46,.355)} ${P(.5,.345)} C${P(.54,.355)} ${P(.59,.40)} ${P(.64,.45)} C${P(.72,.53)} ${P(.86,.60)} ${W+10},${Y(.62)} L${W+10},${H} Z`,fill:'#d8c39a'});
-  mkT(g,'path',{d:`M${P(.5,.345)} C${P(.54,.355)} ${P(.59,.40)} ${P(.64,.45)} C${P(.69,.50)} ${P(.74,.54)} ${P(.78,.57)} L${P(.6,.57)} C${P(.57,.48)} ${P(.53,.39)} ${P(.5,.345)} Z`,fill:'#c6ad80',opacity:.55});
+  // la montagne sacrée, au centre, plus large (Julien, 19 nov.) : son sommet est un petit plateau sur lequel repose toute la base du temple
+  mkT(g,'path',{d:`M-10,${H} L-10,${Y(.60)} C${P(.1,.58)} ${P(.22,.50)} ${P(.3,.43)} C${P(.36,.38)} ${P(.40,.362)} ${P(.43,.358)} L${P(.57,.358)} C${P(.60,.362)} ${P(.64,.38)} ${P(.70,.43)} C${P(.78,.50)} ${P(.90,.58)} ${W+10},${Y(.60)} L${W+10},${H} Z`,fill:'#d8c39a'});
+  mkT(g,'path',{d:`M${P(.57,.358)} C${P(.60,.362)} ${P(.64,.38)} ${P(.70,.43)} C${P(.75,.48)} ${P(.79,.52)} ${P(.83,.56)} L${P(.62,.56)} C${P(.60,.46)} ${P(.585,.39)} ${P(.57,.358)} Z`,fill:'#c6ad80',opacity:.55});
   // le temple de la V1, au sommet de la montagne (même place et même taille que dans l'app, Julien 19 nov.)
   pagodeT(g,.5*W,.355*H,.75*k,'#c9784f','#5a3a32');
   // la brume
@@ -1005,6 +1009,31 @@ function refaireTemple(svg,W,H){const kids=[...svg.children],grainR=kids.find(e=
   mkT(g,'path',{d:`M-10,${H} L-10,${Y(.9)} Q${P(.5,.85)} ${W+10},${Y(.9)} L${W+10},${H} Z`,fill:'#857a50'});
   [[.04,.915,16],[.11,.9,13],[.89,.9,13],[.96,.915,16]].forEach(([x,y,s])=>pinT(g,x*W,y*H,s*k,'#5e5326'))}
 refaireTemple($('scene'),390,844);refaireTemple($('sceneFiche'),390,270);refaireTemple($('sceneApres'),390,190);
+
+/* ---------- Une mise en page qui s'adapte à la hauteur de l'écran (Julien, 19 nov.) ---------- */
+// Sur téléphone, les barres du navigateur réduisent la hauteur : le paysage est recadré et remonte, et la place manque. On place
+// donc tout d'après le temple tel qu'il apparaît vraiment à l'écran :
+// - le mot et le décompte juste au-dessus du haut du temple (ils rapetissent un peu si la place manque, sans passer sous la barre du haut) ;
+// - le torii et son encadré posés juste au-dessus de l'encadré du bas (un peu réduits s'il n'y a pas la place) ;
+// - la phrase de guidage et les phrases de chaque minute (version courte, sur une ligne) entre la base du temple et le haut de
+//   l'encadré du torii ; si une phrase est trop large, sa taille diminue pour tenir sur une ligne.
+const TEMPLE_HAUT=844*.355-36,TEMPLE_BASE=844*.355,BOITE_HAUT=250+TDY,BOITE_BAS=600+TDY;
+function placerTemple(){try{const sc=$('scene'),m=sc.getScreenCTM(),stage=document.querySelector('.stage'),st=stage.getBoundingClientRect().top;
+  const ecr=y=>m.d*y+m.f-st,svgY=y=>(y+st-m.f)/m.d,r=document.documentElement.style;
+  // le mot et le décompte
+  const haut=ecr(TEMPLE_HAUT),f=Math.max(.62,Math.min(1,(haut-8-100)/116));r.setProperty('--tf',f.toFixed(3));
+  const phase=Math.max(100,haut-8-116*f);r.setProperty('--phaseY',Math.round(phase)+'px');
+  // le torii et son encadré
+  const base=ecr(TEMPLE_BASE),bas=$('bas').getBoundingClientRect().top-st,A=base+48,B=bas-12,h=ecr(BOITE_BAS)-ecr(BOITE_HAUT);
+  const k=Math.max(.6,Math.min(1,(B-A)/h)),hautBoite=Math.max(A,B-h*k),yT=svgY(hautBoite);
+  $('creteG').setAttribute('transform',`translate(${(195*(1-k)).toFixed(2)},${(yT-BOITE_HAUT*k).toFixed(2)}) scale(${k.toFixed(4)})`);
+  // la phrase, entre la base du temple et le haut de l'encadré
+  r.setProperty('--zoneY',Math.round((base+hautBoite)/2-phase)+'px');
+  const dz=$('doux'),dispo=stage.clientWidth-28;let t=17;dz.style.fontSize=t+'px';
+  while(dz.scrollWidth>dispo&&t>12){t-=.5;dz.style.fontSize=t+'px'}}catch(e){}}
+const ecrireDouxBase=ecrireDoux;
+ecrireDoux=function(texte,entier){ecrireDouxBase(texte,entier);placerTemple()};
+placerTemple();addEventListener('resize',placerTemple);
 
 /* ---------- L'aigle (Julien, 19 nov.) : à 50 s, puis chaque minute ; adouci (aigus atténués), un peu lointain et pas trop fort ---------- */
 let AIGLE=null;
@@ -1033,7 +1062,7 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
 
 const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUSIQUE=FIN_FONDU+5,FIN_ECRAN=FIN_MUSIQUE+3;   // l'écran de fin arrive 3 s après la fin de la musique (Julien, 18 nov., tous les lieux)
 // La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
-const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
+const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi";
 function frame(){
   requestAnimationFrame(frame);
   if(!sess)return;
