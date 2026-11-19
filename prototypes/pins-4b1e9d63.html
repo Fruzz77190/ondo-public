@@ -554,11 +554,14 @@ function planifier(g,w,k){
   // col des pins (Julien, 19 nov.) : le vent suit le souffle sans jamais s'arrêter ; pendant les rétentions il diminue doucement
   // (en haut jusqu'à 45 % de son plus fort, en bas jusqu'à 60 % de son plus faible), puis repart avec la phase suivante.
   const v0=G.ventNiv(w),v1=G.ventNiv(w+g.d),lv=x=>.03+.06*x,lr=x=>.004+.007*x,haut=g.a===1;
-  const [a,b]=g.n==='Inspire'?[lv(0)*.6,lv(1)]:g.n==='Expire'?[lv(1)*.45,lv(0)]:haut?[lv(1),lv(1)*.45]:[lv(0),lv(0)*.6];
+  // bourrasque (Julien, 19 nov.) : sur l'inspiration où les sapins se penchent, le vent souffle 2,4 fois plus fort et plus clair,
+  // puis retombe pendant la rétention qui suit
+  const el0=w-sess.t0,raf=g.n==='Inspire'&&estRafale(el0),apresRaf=g.n==='Retiens'&&haut&&estRafale(el0-S[0].d),B=2.4;
+  const [a,b]=g.n==='Inspire'?[lv(0)*.6,lv(1)*(raf?B:1)]:g.n==='Expire'?[lv(1)*.45,lv(0)]:haut?[lv(1)*(apresRaf?B:1),lv(1)*.45]:[lv(0),lv(0)*.6];
   if(g.n==='Expire'){follow(G.wind.gain,w,1.5,a*v0,lv(.9)*v0);follow(G.wind.gain,w+1.5,g.d-1.5,lv(.9)*v0,b*v1)}
   else follow(G.wind.gain,w,g.d,a*v0,b*v1);
-  follow(G.rustle.gain,w,g.d,a*v0*.11,b*v1*.11);
-  const f=g.n==='Inspire'?[280,980]:g.n==='Expire'?[650,280]:haut?[980,650]:[280,240];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
+  follow(G.rustle.gain,w,g.d,a*v0*.11*(raf?1.6:1),b*v1*.11*(raf||apresRaf?1.6:1));
+  const f=g.n==='Inspire'?[280,raf?1500:980]:g.n==='Expire'?[650,280]:haut?[apresRaf?1500:980,650]:[280,240];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
   // le gong entre au 3e cycle : Mi bémol au début de l'inspire, Do au début de l'expire (la musique du lac des cimes, en si bémol) ;
   // pendant les rétentions, pas de gong. Fichiers : la = Mi bémol, do5 = Do, fa5 = Fa, re5 = Ré (ceux du lac des cimes).
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
@@ -653,11 +656,14 @@ function animerCiel(el,lvl){const g=document.querySelector('#scene .pfclouds');i
 
 /* ---------- Les bourrasques (Julien, 19 nov.) ---------- */
 // Par moments, un coup de vent traverse le col de gauche à droite : environ un sapin sur deux se penche vers la droite, l'un après
-// l'autre selon sa place, puis se redresse en oscillant un peu. Première bourrasque vers 40 s, puis environ toutes les 50 s.
+// l'autre selon sa place, puis se redresse en oscillant un peu. Environ toutes les 40 s, toujours au début d'une inspiration
+// (Julien, 19 nov.) : la première inspiration qui suit chaque tranche de 40 s (48 s, 1:20, 2:08, 2:40…) ; le vent souffle alors
+// plus fort (voir planifier).
 const SAPINS=(function(){const out=[];let i=0;
   [...$('scene').querySelectorAll('path[fill="#5a4e2a"]')].forEach(p=>{const m=/^M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/.exec(p.getAttribute('d')||'');if(!m)return;
     const x=+m[1],y=+m[4],h=+m[4]-+m[2];if(i++%2===0)out.push({p,x,y,h})});return out})();
-const RAFALES=[40,88,141,187,240,291,338,392,441,489,538,590];
+const RAFALES=[];for(let n=1;n*40<=700;n++){const t=Math.ceil(n*40/T-1e-9)*T;if(!RAFALES.includes(t))RAFALES.push(t)}
+const estRafale=el=>RAFALES.some(r=>Math.abs(r-el)<.01);
 function bourrasque(el){if(!SAPINS.length)return;let a0=0;
   SAPINS.forEach(t=>{let a=0;for(const r of RAFALES){const u=el-r-t.x/390*2.2;if(u<0)break;if(u<7){
       const monte=Math.min(1,u/1.2),ret=u<1.2?1:Math.exp(-(u-1.2)*.9)*Math.cos((u-1.2)*2.6);a=(9+3*(t.h>26))*(u<1.2?adoucirP(monte):ret);break}}
