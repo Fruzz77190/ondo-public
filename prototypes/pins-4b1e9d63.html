@@ -53,7 +53,6 @@ button{font-family:inherit;color:inherit}
 #phaseBox{top:33.4%}
 /* les phrases (et celle de la fin) un peu plus bas, sous le soleil, pour ne jamais le chevaucher (Julien, 19 nov.) */
 #doux{transform:translateY(38px)}
-.lienSon{display:inline-block;margin-top:14px;font:700 14px/1.2 var(--font);color:var(--primary);text-decoration:none}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -199,7 +198,6 @@ button{font-family:inherit;color:inherit}
           <button data-v="5" aria-pressed="false">5 min</button>
           <button data-v="10" aria-pressed="false">10 min</button>
         </div>
-        <a class="lienSon" href="reglages-son.html">Réglages du son ›</a>
       </div>
       <div class="push">
         <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 3 min</span></button>
@@ -485,7 +483,7 @@ function build(t0){
   const rhp=ctx.createBiquadFilter();rhp.type='bandpass';rhp.frequency.value=3200;rhp.Q.value=.6;
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
-  g.ventNiv=t=>1.58*.8*.5*1.5*1.1;   // le même niveau que le vent de la vallée de l'aube
+  g.ventNiv=t=>1.58*.8*.5*1.5*1.1*1.5;   // le vent de la vallée de l'aube, +50 % (Julien, 19 nov.)
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
@@ -556,16 +554,19 @@ function planifier(g,w,k){
   const v0=G.ventNiv(w),v1=G.ventNiv(w+g.d),lv=x=>.03+.06*x,lr=x=>.004+.007*x,haut=g.a===1;
   // bourrasque (Julien, 19 nov.) : sur l'inspiration où les sapins se penchent, le vent souffle 2,4 fois plus fort et plus clair,
   // puis retombe pendant la rétention qui suit
-  const el0=w-sess.t0,raf=g.n==='Inspire'&&estRafale(el0),apresRaf=g.n==='Retiens'&&haut&&estRafale(el0-S[0].d),B=2.4;
-  const [a,b]=g.n==='Inspire'?[lv(0)*.6,lv(1)*(raf?B:1)]:g.n==='Expire'?[lv(1)*.45,lv(0)]:haut?[lv(1)*(apresRaf?B:1),lv(1)*.45]:[lv(0),lv(0)*.6];
+  // (le vent étant 50 % plus fort, la bourrasque monte à 1,8 fois son haut habituel, pour ne pas être trop forte ; elle retombe
+  // ensuite en douceur pendant la rétention et l'expire qui suivent, au lieu de chuter d'un coup)
+  const el0=w-sess.t0,raf=g.n==='Inspire'&&estRafale(el0),apresRaf=g.n==='Retiens'&&haut&&estRafale(el0-S[0].d),expRaf=g.n==='Expire'&&estRafale(el0-S[0].d-S[1].d),B=1.8;
+  const [a,b]=g.n==='Inspire'?[lv(0)*.6,lv(1)*(raf?B:1)]:g.n==='Expire'?[lv(1)*(expRaf?.85:.45),lv(0)]:haut?[lv(1)*(apresRaf?B:1),lv(1)*(apresRaf?.85:.45)]:[lv(0),lv(0)*.6];
   if(g.n==='Expire'){follow(G.wind.gain,w,1.5,a*v0,lv(.9)*v0);follow(G.wind.gain,w+1.5,g.d-1.5,lv(.9)*v0,b*v1)}
   else follow(G.wind.gain,w,g.d,a*v0,b*v1);
-  follow(G.rustle.gain,w,g.d,a*v0*.11*(raf?1.6:1),b*v1*.11*(raf||apresRaf?1.6:1));
-  const f=g.n==='Inspire'?[280,raf?1500:980]:g.n==='Expire'?[650,280]:haut?[apresRaf?1500:980,650]:[280,240];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
+  follow(G.rustle.gain,w,g.d,a*v0*.11*(apresRaf?1.4:1),b*v1*.11*(raf?1.4:1));
+  const f=g.n==='Inspire'?[280,raf?1350:980]:g.n==='Expire'?[expRaf?850:650,280]:haut?[apresRaf?1350:980,apresRaf?850:650]:[280,240];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
   // le gong entre au 3e cycle : Mi bémol au début de l'inspire, Do au début de l'expire (la musique du lac des cimes, en si bémol) ;
   // pendant les rétentions, pas de gong. Fichiers : la = Mi bémol, do5 = Do, fa5 = Fa, re5 = Ré (ceux du lac des cimes).
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
-    const suivante=w+g.d+S[(k+1)%S.length].d;try{frapper(g.n==='Inspire'?'la':'do5',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    const suivante=w+g.d+S[(k+1)%S.length].d;const c=Math.floor(k/S.length)-GONG_CYCLE,noteIn=c%3===2?'fa5':'la';   // un cycle sur trois, le Fa du lac des cimes (Julien, 19 nov.)
+    try{frapper(g.n==='Inspire'?noteIn:'do5',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
