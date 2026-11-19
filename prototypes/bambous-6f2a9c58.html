@@ -994,33 +994,29 @@ const KOALAS=(function(){const sc=$('scene'),grain=[...sc.children].find(e=>e.ta
     mkB(k,'ellipse',{cx:4.5,cy:8,rx:3,ry:7,fill:ventre});
     mkB(k,'path',{d:'M8,15 Q2,19 -2,17',fill:'none',stroke:gris,'stroke-width':4.2,'stroke-linecap':'round'});
     const bras=mkB(k,'path',{d:'M7,-1 Q1,2 -2,1',fill:'none',stroke:gris,'stroke-width':4.2,'stroke-linecap':'round'});
-    // la tête de profil (vers le bambou)…
-    const profil=mkB(k,'g',{});
-    mkB(profil,'circle',{cx:11,cy:-13,r:4.6,fill:clair});mkB(profil,'circle',{cx:11,cy:-13,r:2.5,fill:'#ece6e3'});
-    mkB(profil,'circle',{cx:6,cy:-8,r:7.5,fill:clair});
-    mkB(profil,'ellipse',{cx:-.6,cy:-7,rx:2.4,ry:3,fill:'#3a3433'});
-    mkB(profil,'circle',{cx:3.2,cy:-10,r:1,fill:'#2a2524'});
-    // … et tournée vers nous
-    // … de trois quarts (Julien, 20 nov. : la tête tourne en passant par cette vue, au lieu de s'aplatir) …
-    const troisQuarts=mkB(k,'g',{opacity:0});
-    mkB(troisQuarts,'circle',{cx:-.6,cy:-12.6,r:4,fill:clair});mkB(troisQuarts,'circle',{cx:-.6,cy:-12.6,r:2.1,fill:'#ece6e3'});
-    mkB(troisQuarts,'circle',{cx:11.6,cy:-13,r:4.6,fill:clair});mkB(troisQuarts,'circle',{cx:11.6,cy:-13,r:2.5,fill:'#ece6e3'});
-    mkB(troisQuarts,'circle',{cx:5.2,cy:-8.4,r:7.7,fill:clair});
-    mkB(troisQuarts,'ellipse',{cx:1.9,cy:-6.8,rx:2.3,ry:3,fill:'#3a3433'});
-    mkB(troisQuarts,'circle',{cx:.4,cy:-10,r:.85,fill:'#2a2524'});mkB(troisQuarts,'circle',{cx:5.8,cy:-10.4,r:1,fill:'#2a2524'});
-    // … et tournée vers nous
-    const face=mkB(k,'g',{opacity:0});
-    [-1,1].forEach(c=>{mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:4.6,fill:clair});mkB(face,'circle',{cx:6+c*7.2,cy:-12,r:2.5,fill:'#ece6e3'})});
-    mkB(face,'circle',{cx:6,cy:-8,r:7.8,fill:clair});
-    mkB(face,'ellipse',{cx:6,cy:-6.5,rx:2.3,ry:3,fill:'#3a3433'});
-    [-1,1].forEach(c=>mkB(face,'circle',{cx:6+c*3.3,cy:-10,r:1,fill:'#2a2524'}));
-    return{pos,x,dec,bras,profil,troisQuarts,face}})})();
+    // la tête (Julien, 20 nov.) : une seule tête dont chaque élément glisse en continu entre le profil et la face (le nez et l'œil
+    // vont vers le centre, l'oreille du fond sort de derrière la tête, le second œil apparaît) : une vraie rotation, sans saut
+    const oF=mkB(k,'circle',{r:4.6,fill:clair}),oFi=mkB(k,'circle',{r:2.5,fill:'#ece6e3'});
+    const oP=mkB(k,'circle',{r:4.6,fill:clair}),oPi=mkB(k,'circle',{r:2.5,fill:'#ece6e3'});
+    const tete=mkB(k,'circle',{cx:6,cy:-8,r:7.6,fill:clair});
+    const nez=mkB(k,'ellipse',{rx:2.4,ry:3,fill:'#3a3433'});
+    const oeilP=mkB(k,'circle',{r:1,fill:'#2a2524'}),oeilF=mkB(k,'circle',{r:1,fill:'#2a2524'});
+    return{pos,x,dec,bras,tete:{oF,oFi,oP,oPi,nez,oeilP,oeilF}}})})();
+// la tête selon q (0 = profil, 1 = face) : chaque élément suit un léger arc, comme sur une boule qui tourne
+const lerp=(a,b,q)=>a+(b-a)*q;
+function poserTete(T,q){const arc=Math.sin(Math.PI*q);
+  const set=(e,x,y)=>{e.setAttribute('cx',x.toFixed(2));e.setAttribute('cy',y.toFixed(2))};
+  const fx=lerp(4,-1.2,q),fy=lerp(-13,-12,q)-arc*.6;set(T.oF,fx,fy);set(T.oFi,fx,fy);
+  const px=lerp(11,13.2,q),py=lerp(-13,-12,q);set(T.oP,px,py);set(T.oPi,px,py);
+  set(T.nez,lerp(-.6,6,q),lerp(-7,-6.5,q)+arc*.4);T.nez.setAttribute('rx',lerp(2.4,2.3,q).toFixed(2));
+  set(T.oeilP,lerp(3.2,9.3,q),-10);set(T.oeilF,lerp(.6,2.7,q),-10);T.oeilF.setAttribute('opacity',Math.min(1,q*2.2).toFixed(3))}
 // (Julien, 19 nov.) : ils se déplacent plus lentement (32 s pour monter ou descendre, 8 à 9 s d'arrêt) ; au début, seul le koala
 // de gauche est là (il part d'en bas) ; à 1 min 30, celui de droite arrive par le haut, descend jusqu'à sa place, s'arrête,
-// puis vit sa vie. À chaque arrêt, la tête se tourne vers nous en douceur (le profil s'amincit, puis la face s'élargit),
-// reste tournée, puis revient : 5 s en tout.
+// puis vit sa vie. À chaque arrêt, la tête se tourne vers nous en douceur, reste tournée, puis revient : 5 s en tout.
 const adoucirK=x=>x*x*(3-2*x),C_K=81,ARRIVEE_D=90,DESCENTE_ARRIVEE=16;
-function teteK(u,debut){const v=u-debut;if(v<0||v>5)return 0;return v<1.5?adoucirK(v/1.5):v<3.5?1:adoucirK((5-v)/1.5)}
+// la tête tourne en 1,8 s (montée et descente très douces), reste tournée, puis revient : 5 s en tout
+const doux5=x=>x*x*x*(x*(6*x-15)+10);
+function teteK(u,debut){const v=u-debut;if(v<0||v>5)return 0;return v<1.8?doux5(v/1.8):v<3.2?1:doux5((5-v)/1.8)}
 // u dans le cycle : montée 0-32, arrêt en haut 32-40, descente 40-72, arrêt en bas 72-81
 function cycleK(u){u=((u%C_K)+C_K)%C_K;if(u<32)return{h:adoucirK(u/32),tete:0,bouge:true};if(u<40)return{h:1,tete:teteK(u,33),bouge:false};
   if(u<72)return{h:1-adoucirK((u-40)/32),tete:0,bouge:true};return{h:0,tete:teteK(u,73),bouge:false}}
@@ -1035,10 +1031,7 @@ function koalas(el){const t=performance.now()/1000,E=etatsKoalas(el);KOALAS.forE
   K.pos.setAttribute('opacity',e.vis);const bal=e.bouge?Math.sin(t*2.4+i)*3:0;
   K.pos.setAttribute('transform',`translate(${K.x} ${e.y.toFixed(1)}) rotate(${bal.toFixed(2)})`);
   const a=e.bouge?Math.sin(t*2.4+i)*2.5:0;K.bras.setAttribute('d',`M7,-1 Q1,${(2+a).toFixed(1)} -2,${(1+a*.4).toFixed(1)}`);
-  // la tête qui tourne : le profil s'amincit jusqu'au milieu du mouvement, puis la face s'élargit
-  // la tête tourne en trois temps : profil → trois quarts → face (fondus enchaînés), puis revient de la même façon
-  const q=e.tete,qa=Math.min(1,q*2),qb=Math.max(0,q*2-1);
-  K.profil.setAttribute('opacity',(1-qa).toFixed(3));K.troisQuarts.setAttribute('opacity',(q<.5?qa:1-qb).toFixed(3));K.face.setAttribute('opacity',qb.toFixed(3))})}
+  poserTete(K.tete,e.tete)})}
 
 /* ---------- Les feuilles des bambous bougent doucement à l'inspiration (Julien, 19 nov.) ---------- */
 // Elles se soulèvent un peu à l'inspiration (jusqu'à 5°), frémissent légèrement pendant qu'elle dure, et redescendent à l'expiration.
