@@ -115,8 +115,8 @@ button{font-family:inherit;color:inherit}
   <svg id="fx" class="layer" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <g id="creteG">
       <rect id="toriiBox" fill="rgba(59,44,31,.24)"/>
-      <path id="poutre1" stroke="#fff9f3" stroke-width="6" fill="none" stroke-linecap="round" opacity=".3"/>
-      <line id="poutre2" stroke="#fff9f3" stroke-width="4" stroke-linecap="round" opacity=".22"/>
+      <path id="poutre1" stroke="#c0392b" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/>
+      <line id="poutre2" stroke="#cc6b3c" stroke-width="5" stroke-linecap="round" opacity=".9"/>
       <line id="torA0" stroke="#fff9f3" stroke-width="8" stroke-linecap="round" opacity=".45"/>
       <line id="torA1" stroke="#ffd27a" stroke-width="8" stroke-linecap="round" opacity=".45"/>
       <line id="torA2" stroke="#fff9f3" stroke-width="8" stroke-linecap="round" opacity=".45"/>
@@ -883,11 +883,11 @@ function planifier(g,w,k){
   else follow(G.wind.gain,w,g.d,a*v0,b*v1);
   follow(G.rustle.gain,w,g.d,a*v0*.11,b*v1*.11);
   const f=g.n==='Inspire'?[280,980]:g.n==='Expire'?[650,280]:[980,650];follow(G.windLp.frequency,w,g.d,f[0],f[1]);
-  // le gong entre au 3e cycle : Fa dièse au début de l'inspire, Do dièse au début de l'expire (musique en la majeur) ;
+  // le gong entre au 3e cycle : Fa dièse au début de l'inspire, Mi au début de l'expire (Julien, 19 nov. ; musique en la majeur) ;
   // pendant la rétention, pas de gong. Fichiers : fad5 = Fa dièse, dod5 = Do dièse, mi5 = Mi.
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
     let suivante=w+g.d,j=k+1;while(S[j%S.length].n==='Retiens'){suivante+=S[j%S.length].d;j++}
-    try{frapper(g.n==='Inspire'?'fad5':'dod5',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
+    try{frapper(g.n==='Inspire'?'fad5':'mi5',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}}
 }
 
 function tick(){
@@ -972,8 +972,8 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),k=sec<0?0:Math.min(
 
 /* ---------- Le paysage redessiné (Julien, 19 nov.) : plus esthétique et mieux proportionné ---------- */
 // Même ciel et mêmes couleurs que l'app, mais une composition en plans : une chaîne lointaine douce, la montagne sacrée au centre
-// (flancs creusés, sommet clair juste au-dessus du torii, flanc droit dans l'ombre), la pagode sur ses pentes, vue à travers le
-// torii entre ses piliers, deux nappes de brume, des collines plantées de pins, un premier plan. Soleil plus petit, en haut à droite.
+// (flancs creusés, flanc droit dans l'ombre) avec le temple de la V1 à son sommet et le gros soleil de la V1 derrière (Julien, 19 nov.),
+// deux nappes de brume, des collines plantées de pins, un premier plan.
 const NSV='http://www.w3.org/2000/svg';
 function mkT(p,n,a){const e=document.createElementNS(NSV,n);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
 function pinT(p,x,y,s,c){mkT(p,'path',{d:`M${x.toFixed(1)},${(y-s*2.4).toFixed(1)} L${(x+s*.55).toFixed(1)},${y.toFixed(1)} L${(x-s*.55).toFixed(1)},${y.toFixed(1)} Z`,fill:c})}
@@ -985,17 +985,16 @@ function refaireTemple(svg,W,H){const kids=[...svg.children],grainR=kids.find(e=
   kids.forEach((e,i)=>{if(i<5||e===grainR||e.tagName==='defs')return;e.remove()});
   const g=document.createElementNS(NSV,'g');svg.insertBefore(g,grainR||null);
   const X=x=>(x*W).toFixed(1),Y=y=>(y*H).toFixed(1),P=(x,y)=>X(x)+','+Y(y),k=H/844;
-  // le soleil, en haut à droite, à l'écart des textes
-  const sx=.85,sy=.2,sr=.042*H;[[2.6,.16],[2,.22],[1.5,.32]].forEach(([m,o])=>mkT(g,'circle',{cx:X(sx),cy:Y(sy),r:(sr*m).toFixed(1),fill:'#fde0c4',opacity:o}));
+  // le gros soleil de la V1, derrière le sommet (même taille et même place que dans l'app, Julien 19 nov.)
+  const sx=.5,sy=.24,sr=.13*H;[[2.6,.16],[2,.22],[1.5,.32]].forEach(([m,o])=>mkT(g,'circle',{cx:X(sx),cy:Y(sy),r:(sr*m).toFixed(1),fill:'#fde0c4',opacity:o}));
   mkT(g,'circle',{cx:X(sx),cy:Y(sy),r:sr.toFixed(1),fill:'#e9775a'});
   // la chaîne lointaine
   mkT(g,'path',{d:`M-10,${H} L-10,${Y(.50)} C${P(.1,.48)} ${P(.2,.43)} ${P(.3,.44)} C${P(.38,.45)} ${P(.44,.47)} ${P(.5,.47)} C${P(.58,.47)} ${P(.66,.43)} ${P(.76,.42)} C${P(.86,.41)} ${P(.94,.46)} ${W+10},${Y(.48)} L${W+10},${H} Z`,fill:'#ecd2a8'});
   // la montagne sacrée, au centre : son sommet clair apparaît juste au-dessus du torii
   mkT(g,'path',{d:`M-10,${H} L-10,${Y(.62)} C${P(.14,.60)} ${P(.28,.53)} ${P(.36,.45)} C${P(.41,.40)} ${P(.46,.355)} ${P(.5,.345)} C${P(.54,.355)} ${P(.59,.40)} ${P(.64,.45)} C${P(.72,.53)} ${P(.86,.60)} ${W+10},${Y(.62)} L${W+10},${H} Z`,fill:'#d8c39a'});
   mkT(g,'path',{d:`M${P(.5,.345)} C${P(.54,.355)} ${P(.59,.40)} ${P(.64,.45)} C${P(.69,.50)} ${P(.74,.54)} ${P(.78,.57)} L${P(.6,.57)} C${P(.57,.48)} ${P(.53,.39)} ${P(.5,.345)} Z`,fill:'#c6ad80',opacity:.55});
-  mkT(g,'path',{d:`M${P(.465,.378)} C${P(.48,.36)} ${P(.49,.348)} ${P(.5,.345)} C${P(.51,.348)} ${P(.52,.36)} ${P(.535,.378)} Q${P(.517,.37)} ${P(.505,.386)} Q${P(.49,.37)} ${P(.465,.378)} Z`,fill:'#f6e8cc'});
-  // la pagode, sur les pentes de la montagne : on la voit à travers le torii, entre ses piliers
-  pagodeT(g,.5*W,.585*H,.62*k,'#c9784f','#5a3a32');
+  // le temple de la V1, au sommet de la montagne (même place et même taille que dans l'app, Julien 19 nov.)
+  pagodeT(g,.5*W,.355*H,.75*k,'#c9784f','#5a3a32');
   // la brume
   mkT(g,'rect',{x:-10,y:Y(.595),width:W+20,height:(.028*H).toFixed(1),rx:(.014*H).toFixed(1),fill:'#fcf1e0',opacity:.6});
   mkT(g,'rect',{x:-10,y:Y(.645),width:W+20,height:(.04*H).toFixed(1),rx:(.02*H).toFixed(1),fill:'#fcf1e0',opacity:.5});
