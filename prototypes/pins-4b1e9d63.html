@@ -51,6 +51,8 @@ button{font-family:inherit;color:inherit}
 @keyframes entier{to{opacity:1}}
 /* col des pins : les textes dans le carré, comme dans l'app (texteY 282) */
 #phaseBox{top:33.4%}
+/* les phrases (et celle de la fin) un peu plus bas, sous le soleil, pour ne jamais le chevaucher (Julien, 19 nov.) */
+#doux{transform:translateY(38px)}
 .lienSon{display:inline-block;margin-top:14px;font:700 14px/1.2 var(--font);color:var(--primary);text-decoration:none}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
@@ -437,9 +439,9 @@ const NIV={musique:.239,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
-// Col des pins (Julien, 19 nov.) : la musique du lac des cimes dès le début, qui monte progressivement sur le 1er cycle ;
+// Col des pins (Julien, 19 nov.) : la musique du lac des cimes dès le début, qui monte progressivement sur la 1re inspire et la 1re rétention ;
 // le vent au 2e cycle, le gong au 3e. La musique commence 3 s dans le morceau (son début est silencieux).
-const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=T,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=.35;
+const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=S[0].d+S[1].d,GONG_CYCLE=2,MUS_OFF=3,MUS_DEPART=0;   // la musique monte de rien jusqu'à son plein volume sur la 1re inspire et la 1re rétention (Julien, 19 nov.)
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -637,8 +639,9 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),k=sec<0?0:s.k%4,p=s
   const r=sec>=0&&s.g.n==='Retiens'?p:-1;$('bague').setAttribute('d',anneauC(x,y,Math.max(0,r)));$('bague').setAttribute('opacity',r>0?.95:0)}
 
 /* ---------- Le soleil un peu plus bas, et qui bouge un peu plus avec le souffle (Julien, 19 nov.) ---------- */
-// Il est posé 45 points plus bas que dans l'app ; il monte de 22 points à l'inspiration (10 dans l'app) et ses anneaux respirent pleinement.
-const SOLEIL_BAS=45,SOLEIL_MONTEE=22;
+// Il est posé 62 points plus bas que dans l'app, pour ne jamais toucher le mot « Inspire / Retiens / Expire » même en haut de son
+// mouvement (Julien, 19 nov.) ; il monte de 22 points à l'inspiration (10 dans l'app) et ses anneaux respirent pleinement.
+const SOLEIL_BAS=62,SOLEIL_MONTEE=22;
 function soleil(lvl){if(!SC)return;SC.breathe(lvl);const g=$('scene').querySelector('.pfsun');
   if(g)g.setAttribute('transform',`translate(0,${(SOLEIL_BAS-lvl*SOLEIL_MONTEE).toFixed(2)})`)}
 
