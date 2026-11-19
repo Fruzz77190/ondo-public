@@ -51,6 +51,7 @@ button{font-family:inherit;color:inherit}
 @keyframes entier{to{opacity:1}}
 /* brume : la phrase de fin sous le soleil, au milieu de l'écran (Julien, 18 nov.) ; hauteur réglée par placerFin() */
 #doux.finSoleil{position:fixed;left:0;right:0;top:var(--finY,400px);padding:0 24px;text-align:center}
+.lienSon{display:inline-block;margin-top:14px;font:700 14px/1.2 var(--font);color:var(--primary);text-decoration:none}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -193,6 +194,7 @@ button{font-family:inherit;color:inherit}
           <button data-v="5" aria-pressed="false">5 min</button>
           <button data-v="10" aria-pressed="false">10 min</button>
         </div>
+        <a class="lienSon" href="reglages-son.html">Réglages du son ›</a>
       </div>
       <div class="push">
         <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 3 min</span></button>
@@ -746,6 +748,10 @@ function follow(param,w,d,from,to){param.setValueAtTime(from,w);const N=14;for(l
 const panner=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
 // Le mélange par défaut (plus tard réglable dans Réglages : « Musique » et « Sons de la respiration »)
 const VOL={musique:1.15,sons:.75};
+// Réglages › Son (Julien, 19 nov.) : les volumes choisis dans la page de réglages, de 0 à 150 % (100 % = le mélange validé).
+// Ils sont lus au début de chaque séance ; les sons (ambiances, vent, animaux, carillons) et le gong se règlent séparément.
+function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-volumes')||'{}'),f=x=>typeof x==='number'&&x>=0&&x<=1.5?x:1;
+  return{musique:f(v.musique),sons:f(v.sons),gong:f(v.gong)}}catch(e){return{musique:1,sons:1,gong:1}}}
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-brume-b3e8d51f/';
 // Mêmes niveaux que les autres lieux (musique et gong) ; la chouette 8 dB sous le gong, pour ne pas le couvrir.
@@ -783,7 +789,8 @@ function build(t0){
   const ir=impulse(4);
   // chaque groupe (musique, sons) a son volume et son interrupteur de fin
   const bus=v=>{const u=ctx.createGain();u.gain.value=v;const f=ctx.createGain();f.gain.value=1;u.connect(f).connect(g.out);const rev=ctx.createConvolver();rev.buffer=ir;const r=ctx.createGain();r.gain.value=.55;rev.connect(r).connect(u);return{u,f,rev}};
-  g.sons=bus(VOL.sons);g.mus=bus(VOL.musique);
+  const RV=lireVolumes(),vs=Math.max(RV.sons,.001);g.reglages=RV;
+  g.sons=bus(VOL.sons*vs);g.mus=bus(VOL.musique*RV.musique);
   const brown=noiseBuf('brown',7),pink=noiseBuf('pink',7);
   // les fichiers longs (musique, cigales) sont lus en continu par le téléphone, puis passent par nos réglages de volume
   LONGS.forEach(n=>{const m=media(n);if(!m.src)m.src=ctx.createMediaElementSource(m.el);try{m.src.disconnect()}catch(e){}});
@@ -805,9 +812,9 @@ function build(t0){
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
-  g.gong=ctx.createGain();g.gong.gain.value=1;g.gong.connect(g.sons.u);
+  g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
   // les trois coups de la fin sonnent jusqu'au bout, hors du fondu des sons
-  g.gongFin=ctx.createGain();g.gongFin.gain.value=VOL.sons;g.gongFin.connect(g.out);
+  g.gongFin=ctx.createGain();g.gongFin.gain.value=VOL.sons*RV.gong;g.gongFin.connect(g.out);
   return g;
 }
 function applyMute(){if(G&&ctx)G.mute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08)}
