@@ -1064,7 +1064,23 @@ function decoderPluie(){if(PLUIE_BUF||!ctx)return;pluieCharge.then(b=>new Promis
 function planifierPluie(n){if(!PLUIE_BUF||!G||sess.pluieOk)return;const w=sess.t0+PLUIE_DE;if(n<w-4||w>=sess.end)return;sess.pluieOk=true;
   const s=ctx.createBufferSource();s.buffer=PLUIE_BUF;s.loop=true;const g=ctx.createGain();
   g.gain.setValueAtTime(0,Math.max(n,w));g.gain.linearRampToValueAtTime(NIV.pluie,Math.max(n,w)+PLUIE_FONDU);s.connect(g).connect(G.sons.u);
-  s.start(Math.max(n,w),Math.max(0,n-w)%PLUIE_BUF.duration);G.srcs.push(s)}
+  s.start(Math.max(n,w),Math.max(0,n-w)%PLUIE_BUF.duration);G.srcs.push(s);
+  if(n<=w+1)orage(w)}
+
+/* ---------- Le grondement d'orage, au moment où la pluie arrive (Julien, 20 nov. : orage de synthèse) ---------- */
+// Un tonnerre lointain fabriqué à partir d'un bruit grave : un léger craquement au début, puis un grondement qui roule en
+// plusieurs vagues pendant 8 s en devenant de plus en plus sourd, avec de la réverbération. Assez présent, sans être fort.
+const NIV_ORAGE=.35;
+function orage(w){const ins=(p,pts)=>{p.setValueAtTime(0,w);pts.forEach(([t,v])=>p.linearRampToValueAtTime(v,w+t))};
+  // le grondement
+  const r=ctx.createBufferSource();r.buffer=noiseBuf('brown',9);const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.Q.value=.7;
+  lp.frequency.setValueAtTime(650,w);lp.frequency.exponentialRampToValueAtTime(320,w+2);lp.frequency.exponentialRampToValueAtTime(140,w+8.5);
+  const g=ctx.createGain();ins(g.gain,[[.35,.7],[1.1,.42],[1.8,.9],[2.9,.5],[4.1,.62],[5.6,.3],[7,.18],[8.6,0]].map(([t,v])=>[t,v*NIV_ORAGE]));
+  r.connect(lp).connect(g).connect(G.sons.u);const rv=ctx.createGain();rv.gain.value=.5;g.connect(rv).connect(G.sons.rev);
+  r.start(w);r.stop(w+9);G.srcs.push(r);
+  // le craquement du début, plus clair et très court
+  const c=ctx.createBufferSource();c.buffer=noiseBuf('pink',1.2);const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1400;bp.Q.value=.6;
+  const gc=ctx.createGain();ins(gc.gain,[[.05,.05*NIV_ORAGE/.35],[.25,.02],[.9,0]]);c.connect(bp).connect(gc).connect(G.sons.u);c.start(w);c.stop(w+1.2);G.srcs.push(c)}
 
 /* ---------- La musique dure jusqu'au bout (même réglage que les autres lieux) ---------- */
 const DUREE_MUSIQUE=600;
