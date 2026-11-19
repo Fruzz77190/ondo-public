@@ -748,7 +748,7 @@ const VOL={musique:1.15,sons:.75};
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-obs-2a7d64e1/';
 // Mêmes niveaux que les autres lieux (musique, gong) ; les carillons au même niveau ressenti entre eux (le 3 est plus fort de 4 dB).
-const NIV={musique:.239,gong:.906,carillon3:.30,carillon1:.47*.6,carillon2:.40*.6};   // carillons 1 et 2 : -40 % (Julien, 19 nov.)   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239,gong:.906,carillon3:.30*.6,carillon1:.47*.6*.6,carillon2:.40*.6*.6};   // carillons 1 et 2 : -40 %, puis tous les carillons -40 % (Julien, 19 nov.)   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
@@ -973,10 +973,14 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec)),lvl=sec<0?0:s.lvl,y=LYB-
 // son sommet. Les montagnes du fond passent par les mêmes sommets, mais en courbes arrondies. Les sapins sont replantés le long
 // des pentes, en petits bosquets de tailles variées. Pareil sur les vignettes de la fiche et de la fin.
 function refaireColline(svg,W,H){const NS='http://www.w3.org/2000/svg',kids=[...svg.children];
+  // la bande lumineuse (voie lactée de l'app) qui descendait de la lune vers le bas à gauche est retirée (Julien, 19 nov.)
+  kids.filter(e=>e.tagName==='g'&&e.querySelector&&e.querySelector('path[fill="#5a5a8e"]')).forEach(e=>e.remove());
   const colline=kids.find(e=>e.getAttribute&&e.getAttribute('fill')==='#1d1d3c');if(!colline)return{};
   // montagnes du fond : les mêmes sommets, reliés par des courbes douces (Catmull-Rom)
   const fond=kids.find(e=>e.getAttribute&&e.getAttribute('fill')==='#34365f');
-  if(fond){const P=[[-10,.7],[.2,.5],[.34,.6],[.52,.42],[.7,.58],[.84,.48],[1,.6]].map(([x,y])=>[x<0?x:x*W+(x===1?10:0),y*H]);
+  // moins hautes (Julien, 19 nov.) : chaque sommet est ramené à 45 % de sa hauteur au-dessus de l'horizon (.62 H)
+  const bas=y=>.62+(y-.62)*.45;
+  if(fond){const P=[[-10,.7],[.2,.5],[.34,.6],[.52,.42],[.7,.58],[.84,.48],[1,.6]].map(([x,y])=>[x<0?x:x*W+(x===1?10:0),bas(y)*H]);
     let d=`M${P[0][0]},${P[0][1].toFixed(1)}`;for(let k=0;k<P.length-1;k++){const p0=P[Math.max(0,k-1)],p1=P[k],p2=P[k+1],p3=P[Math.min(P.length-1,k+2)];
       const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6],c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
       d+=` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`}
