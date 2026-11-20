@@ -173,7 +173,7 @@ button{font-family:inherit;color:inherit}
       <span class="h1"></span><span class="h2"></span>
       <span class="hb" id="hb"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7a2e1c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><b id="hbTxt">Je respire</b></span>
     </button>
-    <p class="apg" id="apGuide">Expire tout l'air et garde les poumons vides…<br><span id="apG2" class="apg2">Appuie sur le rond quand tu as besoin de respirer.</span></p>
+    <p class="apg" id="apGuide"><span id="apG2" class="apg2">Appuie sur le rond quand tu sens<br>que tu as besoin de respirer.</span></p>
   </div>
 
   <!-- Entre deux tours -->
@@ -440,7 +440,7 @@ function sonsEtape(etape,w){if(!G)return;
   if(etape==='souffles'){if(sess.tour>0)musique(0,w,5);
     const go=()=>planifierSouffles(w-0,sess.depuis||0);if(BUF['souffle-inspire'])go();else if(decodage)decodage.then(()=>{if(sess&&sess.etape==='souffles')go()})}
   else if(etape==='inspire'){jouer('souffle-inspire-fond',w,NIV.souffle);jouer('carillon',w,NIV.carillon)}   // le carillon (1) à l'inspire après l'apnée, bien audible (Julien, 20 nov. : à la place de la flûte)
-  else if(etape==='expire')jouer('souffle-expire-long',w,NIV.souffle)}
+  else if(etape==='expire'){jouer('souffle-expire-long',w,NIV.souffle);musique(0,w,EXP)}}   // la musique s'efface pendant l'expire qui suit les poumons pleins (Julien, 21 nov.)
 function couperPrevus(){if(!G||!ctx)return;const n=ctx.currentTime;G.srcs=G.srcs.filter(x=>{if(x.w>n-.01){try{x.s.stop()}catch(e){}return false}return true})}
 
 /* ---------- Séance ---------- */
