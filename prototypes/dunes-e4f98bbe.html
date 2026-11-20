@@ -163,7 +163,7 @@ button{font-family:inherit;color:inherit}
       <div class="calme">
         <p class="q">Après la séance</p>
         <div class="piste" id="echelle"><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button></div>
-        <div class="bouts"><span>Agité</span><span>Serein</span></div>
+        <div class="bouts"><span>Fatigué</span><span>En forme</span></div>
       </div>
     </div>
     <div class="ft">
@@ -449,7 +449,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['fa5','do5','la4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['fa5','do5','la4','fa3'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -590,7 +590,7 @@ function tick(){
   if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+FONDU_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=MUS_OFF}catch(e){}}
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['fa5',.2],['do5',2.8],['la4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['fa5',.2],['do5',2.8],['la4',5.4],['fa3',8]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
@@ -734,12 +734,16 @@ const CARAVANE=(function(){if(!CRETE_LOIN)return null;
     e(tete,'path',{fill:coul,d:'M4.6,-13.6 Q7.5,-11.6 9.4,-12.6 Q10.6,-13.4 11.4,-15.6 Q12,-16.6 13.4,-16.4 L15.4,-15.6 Q16,-15 15.2,-14.6 L13,-14.2 Q11.8,-13.6 11,-11.6 Q10,-9.4 7.6,-9.2 L5.6,-9.6 Z'});
     return{o,j:[jambe(o,-5,-9.4,1.15),jambe(o,-3.6,-9.4,1.15),jambe(o,3.6,-9.4,1.15),jambe(o,5,-9.4,1.15)],tete,piv:-9.4,dx,pas:1.9,ph}};
   return{g,membres:[homme(0,false),dromadaire(-14,0),dromadaire(-36,.7),homme(-52,true)]}})();
-function caravane(el){if(!CARAVANE)return;const q=(el-CARAVANE_DE)/CARAVANE_DUREE;
-  if(el<0||q<0||q>1.4){CARAVANE.g.setAttribute('opacity',0);return}
+// (Julien, 20 nov.) une fois sa traversée finie (le dernier homme sorti de l'écran), la caravane repasse 1 min 30 plus tard
+// dans l'autre sens, et ainsi de suite : 1:25 → vers la droite, puis vers la gauche, puis vers la droite…
+const CARAVANE_TRAVERSEE=66,CARAVANE_PAUSE=90;
+function caravane(el){if(!CARAVANE)return;const d=el-CARAVANE_DE,P=CARAVANE_TRAVERSEE+CARAVANE_PAUSE;
+  const n=Math.floor(d/P),tl=d-n*P,q=tl/CARAVANE_DUREE,dir=n%2?-1:1;
+  if(el<0||d<0||tl>CARAVANE_TRAVERSEE){CARAVANE.g.setAttribute('opacity',0);return}
   CARAVANE.g.setAttribute('opacity',.62);
-  const x0=-20+q*435;   // l'homme de tête part du bord gauche et atteint le bord droit au bout d'une minute ; la file le suit
-  CARAVANE.membres.forEach(m=>{const x=x0+m.dx,y=CRETE_LOIN.y(x)+.6,t=el*m.pas+(m.ph||0);
-    m.o.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(.62)`);
+  const x0=dir>0?-20+q*435:410-q*435;   // l'homme de tête traverse l'écran en une minute ; la file le suit
+  CARAVANE.membres.forEach(m=>{const x=x0+dir*m.dx,y=CRETE_LOIN.y(x)+.6,t=el*m.pas+(m.ph||0);
+    m.o.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(.62*dir).toFixed(2)} .62)`);
     const a=Math.sin(t*Math.PI)*(m.homme?16:13);   // les pattes avancent au pas (diagonales opposées)
     m.j.forEach((l,i)=>{const s=(m.homme?(i?-1:1):(i%2?1:-1)*(i<2?1:-1))*a;l.setAttribute('transform',`rotate(${s.toFixed(1)} ${l.getAttribute('x1')} ${m.piv})`)});
     if(m.tete)m.tete.setAttribute('transform',`rotate(${(Math.sin(t*Math.PI)*2.5).toFixed(1)} 5 -12)`)})}
@@ -752,7 +756,13 @@ const LEVER=120,LEVER_REPRISE=8;
 const SOLEIL=(function(){const sun=$('scene').querySelector('.pfsun');if(!sun||!CRETE_LOIN)return null;
   const d=[...sun.querySelectorAll('circle')].pop(),cx=+d.getAttribute('cx'),cy=+d.getAttribute('cy');
   return{sun,D:CRETE_LOIN.y(cx)-cy}})();
-function soleilDunes(el,lvl){if(!SC)return;
+// La phrase de fin « Merci d'avoir pris ce moment pour toi » s'écrit juste sous le soleil (Julien, 20 nov.).
+function finSousSoleil(){const dz=$('doux'),d=SOLEIL&&[...SOLEIL.sun.querySelectorAll('circle')].pop();if(!d)return;
+  const r=d.getBoundingClientRect();dz.dataset.sousSoleil='1';
+  Object.assign(dz.style,{position:'fixed',left:'0',right:'0',top:Math.round(r.bottom+14)+'px',padding:'0 28px',textAlign:'center'})}
+function remettreDoux(){const dz=$('doux');if(!dz.dataset.sousSoleil)return;delete dz.dataset.sousSoleil;
+  ['position','left','right','top','padding','textAlign'].forEach(k=>dz.style[k]='')}
+function soleilDunes(el,lvl){if(!SC)return;remettreDoux();
   const e=Math.max(0,el),q=Math.min(1,e/LEVER),u=q*q*(3-2*q),w=Math.min(1,Math.max(0,(e-LEVER)/LEVER_REPRISE)),b=lvl*w*w*(3-2*w);
   SC.breathe(b);
   if(SOLEIL)SOLEIL.sun.setAttribute('transform',`translate(0,${(SOLEIL.D*(1-u)-b*10).toFixed(2)})`)}
@@ -782,7 +792,7 @@ function frame(){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
     $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
-    ecrireDoux(MESSAGE_FIN,true);
+    ecrireDoux(MESSAGE_FIN,true);finSousSoleil();
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
     sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
     const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
