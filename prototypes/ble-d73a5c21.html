@@ -185,13 +185,13 @@ button{font-family:inherit;color:inherit}
       <div>
         <p class="small">Durée</p>
         <div class="seg" id="segDuree">
-          <button data-v="1" aria-pressed="true">1 min</button>
+          <button data-v="2" aria-pressed="true">2 min</button>
           <button data-v="3" aria-pressed="false">3 min</button>
-          <button data-v="5" aria-pressed="false">5 min</button>
+          <button data-v="4" aria-pressed="false">4 min</button>
         </div>
       </div>
       <div class="push">
-        <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 1 min</span></button>
+        <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 2 min</span></button>
       </div>
     </div>
   </div>
@@ -690,7 +690,7 @@ function renderSon(){$('icoSon').hidden=muet;$('icoMuet').hidden=!muet;$('btnSon
 renderSon();
 
 /* ---------- Fiche : durée comme dans la V1 (3, 5 ou 10 min, 3 min par défaut) ---------- */
-let duree=1;
+let duree=2;
 $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duree=+b.dataset.v;$('segDuree').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('btnGoTxt').textContent='Commencer · '+duree+' min'});
 
 /* ---------- Paysages (scène du kit, identique à l'app) ---------- */
@@ -710,7 +710,7 @@ const MESSAGES=[
   {de:60,a:70,texte:'Continue comme ça.'},
   {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
   // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
-  {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
+  {de:180,a:190,texte:'Ne continue que si tu te sens bien.'},
   {de:240,a:250,texte:'Ton souffle ralentit, ton corps se pose.'},
   {de:300,a:310,texte:"Il n'y a rien d'autre à faire que respirer."},
   {de:360,a:370,texte:"Si ton esprit s'échappe, reviens simplement au son du gong."},
@@ -750,15 +750,15 @@ function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-v
   return{musique:f(v.musique),sons:f(v.sons),gong:f(v.gong)}}catch(e){return{musique:1,sons:1,gong:1}}}
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-ble-d73a5c21/';
-// Musique 30 % plus basse que dans les autres lieux (Julien, 20 nov.) ; même niveau de gong.
-const NIV={musique:.239*.7,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
+// Musique 30 % plus basse que dans les autres lieux, puis encore -50 % (Julien, 20 nov.) ; même niveau de gong.
+const NIV={musique:.239*.7*.5,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Champs de blé (Julien, 20 nov.) : la musique « Chant de blé » commence progressivement dès le « 2 » du décompte, lue à partir
 // de 1:50 dans le morceau (le fichier commence à 1:48, d'où MUS_OFF 2), sur 30 s en courbe douce ; pas de vent (il y en a déjà
 // dans la musique) ; un gong grave rythme le souffle dès le 1er cycle : Fa3 aux deux inspirations, Do3 à l'expiration (Julien, 20 nov.).
-const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=30,MUS_OFF=2,MUS_DEPART=0;
+const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=30,MUS_OFF=2,MUS_DEPART=.35,MUS_FIN=45;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -768,7 +768,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['fa3','do3'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['fa4','do4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -805,7 +805,9 @@ function build(t0){
   g.ventNiv=t=>1.58*.8*.5*1.5*1.1;
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
-  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);for(let i=1;i<=12;i++){const q=i/12;g.musOn.gain.linearRampToValueAtTime(q*q,t0+MUS_DE+MUS_DUREE*q)}
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);for(let i=1;i<=12;i++){const q=i/12;g.musOn.gain.linearRampToValueAtTime(MUS_DEPART+(1-MUS_DEPART)*Math.sqrt(q),t0+MUS_DE+MUS_DUREE*q)}
+    // à la fin, la musique disparaît en fondu très progressif : de 45 s avant la fin jusqu'à 5 s après (Julien, 20 nov.)
+    g.musOn.gain.setValueAtTime(1,t0+sess.total-MUS_FIN);for(let i=1;i<=16;i++){const q=i/16;g.musOn.gain.linearRampToValueAtTime((1-q)*(1-q),t0+sess.total-MUS_FIN+(MUS_FIN+5)*q)}
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
@@ -871,7 +873,8 @@ function planifier(g,w,k){
   // champs de blé (Julien, 20 nov.) : pas de vent (il y en a déjà dans la musique) ; un gong grave rythme le souffle dès le
   // 1er cycle, accordé à la musique (do mineur, beaucoup de Fa) : Fa3 à chacune des deux petites inspirations, Do3 à l'expiration.
   // Chaque coup s'efface sous le suivant (frapper).
-  try{frapper(g.n==='Inspire'?'fa3':'do3',w,w+g.d,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
+  // une octave plus haut, à partir du 2e cycle (Julien, 20 nov.)
+  if(k>=S.length)try{frapper(g.n==='Inspire'?'fa4':'do4',w,w+g.d,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
 }
 
 function tick(){
@@ -956,7 +959,7 @@ const NUAGES=[...$('scene').querySelectorAll('.qclouds')].map(g=>{const w=docume
   const c=g.cloneNode(true);c.setAttribute('transform','translate(-390,0)');w.appendChild(c);return w});
 function champ(){const t=performance.now()/1000;
   BRINS.forEach(b=>{const f=.75+.25*Math.sin(t*.23+b.x*.004),o=Math.sin(t*1.05-b.x*.018+b.y*.01)*.6+Math.sin(t*.61-b.x*.009+1.3)*.4;
-    const s=b.h*(.16+.2*o)*f,dy=b.h-Math.sqrt(Math.max(0,b.h*b.h-s*s));
+    const s=b.h*(.3+.38*o)*f,dy=b.h-Math.sqrt(Math.max(0,b.h*b.h-s*s));
     b.p.setAttribute('d',`M${b.x},${b.y} q${(2+s*.35).toFixed(2)},${(-b.h*.6).toFixed(2)} ${(1+s).toFixed(2)},${(-b.h+dy).toFixed(2)}`)});
   if(MOULIN)MOULIN.setAttribute('transform',`rotate(${((t*40)%360).toFixed(1)} ${MOULIN.dataset.cx} ${MOULIN.dataset.cy})`);
   NUAGES.forEach(w=>w.setAttribute('transform',`translate(${((t*6)%390).toFixed(1)},0)`))}
