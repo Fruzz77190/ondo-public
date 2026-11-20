@@ -380,7 +380,7 @@ function passerHorlogeTel(t){clock.audio=false;clock.base=performance.now()/1000
 // Tous ramenés à -20 LUFS (le souffle, les deux coups de tambour, la flûte un peu moins, la musique de la forêt de brume).
 // La cascade : 40 s du fichier de Julien, bouclées sans couture et jouées en mémoire ; la musique reste le seul long fichier lu.
 const SONS='sons-chutes-5b9e2d40/';
-const NIV={cascade:.16,souffle:.21,tambour:.30,flute:.34,musique:.239};
+const NIV={cascade:.16,souffle:.105,tambour:.60,flute:.34,musique:.239};
 const VOL={musique:1.15,sons:.75};
 function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-volumes')||'{}'),f=x=>typeof x==='number'&&x>=0&&x<=1.5?x:1;
   return{musique:f(v.musique),sons:f(v.sons),gong:f(v.gong)}}catch(e){return{musique:1,sons:1,gong:1}}}
@@ -425,7 +425,8 @@ function planifierSouffles(w0,depuis){
     // le souffle de Julien commence par une expiration : on joue l'inspiration à « Inspire fort », l'expiration à « Relâche »
     jouer('souffle-inspire',w,NIV.souffle);jouer('souffle-expire',w+INS,NIV.souffle);
     // le tambour chamanique : dès la 3e inspiration au 1er tour (Julien, 20 nov.), dès le 1er souffle aux tours suivants ; un coup à chaque inspire et à chaque expire
-    if(sess.tour>0||i>=2){jouer('tambour-1',w,NIV.tambour);jouer('tambour-2',w+INS,NIV.tambour*.85)}}
+    if(sess.tour>0||i>=2){// deux fois plus de coups (Julien, 20 nov.) : au début et au milieu de l'inspire, au début et au milieu de l'expire
+      jouer('tambour-1',w,NIV.tambour);jouer('tambour-2',w+INS/2,NIV.tambour*.8);jouer('tambour-1',w+INS,NIV.tambour*.9);jouer('tambour-2',w+INS+(SOUF-INS)/2,NIV.tambour*.75)}}
   // la flûte de bambou aussi à 40 s des souffles, à chaque tour (Julien, 20 nov.)
   if(depuis*SOUF<=40)jouer('flute',w0+40,NIV.flute);
   const m=w0+NB*SOUF-5;if(m>ctx.currentTime-1){G.musOn.gain.setValueAtTime(0,Math.max(m,ctx.currentTime));G.musOn.gain.linearRampToValueAtTime(1,Math.max(m,ctx.currentTime)+4)}
