@@ -659,7 +659,7 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 /* ---------- Les dunes du matin : des grues passent dans le ciel à chaque minute (Julien, 20 nov.) ---------- */
 // Le même dessin que les grues du temple de la montagne (trait d'estampe, tache rouge sur la tête, ailes qui battent lentement
 // puis planent). Deux ou trois grues traversent le ciel au-dessus du soleil, à 1 min, 2 min, 3 min…, tour à tour vers la
-// gauche puis vers la droite ; chaque traversée dure 26 à 32 s.
+// gauche puis vers la droite ; chaque traversée dure 26 à 32 s. (Julien, 20 nov. : à 50 s, puis toutes les minutes : 1:50, 2:50…)
 const NSVD='http://www.w3.org/2000/svg';
 const GRUES=(function(){const sc=$('scene'),g=document.createElementNS(NSVD,'g');g.setAttribute('pointer-events','none');
   const grain=[...sc.children].find(e=>e.tagName==='rect'&&e.getAttribute('filter'));sc.insertBefore(g,grain||null);
@@ -673,7 +673,7 @@ const GRUES=(function(){const sc=$('scene'),g=document.createElementNS(NSVD,'g')
     const aile=e('path',Object.assign({'stroke-width':1.6},trait)),plume=e('path',Object.assign({'stroke-width':1.1,opacity:.55},trait));
     return{o,aile,plume}})})();
 function prevoirGrues(){const v=[];for(let i=1;i<=12;i++){const dur=26+Math.random()*6,dir=i%2?1:-1;
-    v.push({t:60*i,dur,dir,y:165+Math.random()*30,n:Math.random()<.5?2:3,ph:Math.random()*6.28,s:1+Math.random()*.25})}return v}
+    v.push({t:50+60*(i-1),dur,dir,y:165+Math.random()*30,n:Math.random()<.5?2:3,ph:Math.random()*6.28,s:1+Math.random()*.25})}return v}
 function grues(el){if(el<0||!sess){GRUES.forEach(c=>c.o.setAttribute('opacity',0));return}
   if(!sess.grues)sess.grues=prevoirGrues();const f=sess.grues.find(v=>el>=v.t&&el<v.t+v.dur+3);
   GRUES.forEach((c,i)=>{if(!f||i>=f.n){c.o.setAttribute('opacity',0);return}
