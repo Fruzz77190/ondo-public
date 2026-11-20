@@ -474,7 +474,7 @@ function build(t0){
   // 1er cycle : les cigales
   // (pas de son d'ambiance ici : le vent fait l'ambiance)
   // 2e cycle : le vent dans la lavande, qui respire avec toi
-  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T-.5);x.gain.linearRampToValueAtTime(1,t0+T+.3)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
+  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0-.5);x.gain.linearRampToValueAtTime(1,t0+.3)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
   const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
   g.windLp=ctx.createBiquadFilter();g.windLp.type='lowpass';g.windLp.frequency.value=280;g.windLp.Q.value=.4;
   g.wind=ctx.createGain();g.wind.gain.value=.03;ws.connect(g.windLp).connect(g.wind).connect(g.ventOn);ws.start();g.srcs.push(ws);
@@ -556,9 +556,16 @@ function planifier(g,w,k){
   // dunes du matin (Julien, 20 nov.) : le vent dès le 1er cycle, bien marqué et calé sur le souffle : il se lève avec l'inspire,
   // reste en haut pendant la petite pause, puis retombe avec l'expire.
   const l0=g.a,l1=g.b,v0=G.ventNiv(w),v1=G.ventNiv(w+g.d),lv=x=>.02+.10*x;
-  follow(G.wind.gain,w,g.d,lv(l0)*v0,lv(l1)*v1);
-  follow(G.windLp.frequency,w,g.d,260+950*l0,260+950*l1);
-  follow(G.rustle.gain,w,g.d,(.003+.011*l0)*v0,(.003+.011*l1)*v1);
+  // une inspiration sur trois (la 3e, la 6e, la 9e…), une bourrasque (Julien, 20 nov.) : le vent monte à 1,8 fois son haut
+  // habituel et devient plus clair, reste fort pendant la pause, puis retombe en douceur pendant l'expire qui suit.
+  const i=k%S.length,c=Math.floor(k/S.length),raf=c%3===2,B=1.8,Bp=1.4;
+  let w0=lv(l0),w1=lv(l1),f0=260+950*l0,f1=260+950*l1,r0=.003+.011*l0,r1=.003+.011*l1;
+  if(raf&&i===0){w1*=B;f1=1600;r1*=1.5}
+  else if(raf&&i===1){w0*=B;w1*=Bp;f0=1600;f1=1350;r0*=1.5;r1*=1.3}
+  else if(raf&&i===2){w0*=Bp;f0=1350;r0*=1.3}
+  follow(G.wind.gain,w,g.d,w0*v0,w1*v1);
+  follow(G.windLp.frequency,w,g.d,f0,f1);
+  follow(G.rustle.gain,w,g.d,r0*v0,r1*v1);
   // le gong deux cycles après la musique (5e cycle) : Fa au début de l'inspire, Do au début de l'expire (la musique est en fa majeur)
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
     const suivante=w+g.d+S[(k+1)%S.length].d;
