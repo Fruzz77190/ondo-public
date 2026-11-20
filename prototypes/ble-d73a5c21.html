@@ -111,6 +111,7 @@ button{font-family:inherit;color:inherit}
 <div class="stage" id="stage">
   <svg id="scene" class="layer" aria-hidden="true"></svg>
   <svg id="fx" class="layer" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g id="volG"></g>
     <g id="creteG">
       <rect x="115" y="362" width="160" height="276" rx="32" fill="rgba(70,45,10,.25)"/>
       <rect x="137" y="390" width="46" height="220" rx="23" fill="rgba(255,249,243,.22)" stroke="#fff9f3" stroke-width="3"/>
@@ -874,7 +875,7 @@ function planifier(g,w,k){
   // 1er cycle, accordé à la musique (do mineur, beaucoup de Fa) : Fa3 à chacune des deux petites inspirations, Do3 à l'expiration.
   // Chaque coup s'efface sous le suivant (frapper).
   // une octave plus haut, à partir du 2e cycle (Julien, 20 nov.)
-  if(k>=S.length)try{frapper(g.n==='Inspire'?'fa5':'do4',w,w+g.d,null,g.n==='Inspire'?4:1,w+g.d)   /* Fa5 4 fois plus fort (Julien, 20 nov.) */}catch(e){toast('Gong : '+e.message,8000)}
+  if(k>=S.length)try{frapper(g.n==='Inspire'?'fa5':'do4',w,w+g.d,null,g.n==='Inspire'?4:2,w+g.d)   /* Fa5 4 fois plus fort, Do4 2 fois plus fort (Julien, 20 nov.) */}catch(e){toast('Gong : '+e.message,8000)}
 }
 
 function tick(){
@@ -976,6 +977,50 @@ function papillon(el){const d0=16,D=16,p=el<d0?-1:((el-d0)%60)/D,P=$('pap');   /
 const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUSIQUE=FIN_FONDU+5,FIN_ECRAN=FIN_MUSIQUE+3;   // l'écran de fin arrive 3 s après la fin de la musique (Julien, 18 nov., tous les lieux)
 // La phrase de fin (choisie par Julien, 18 nov.) : elle apparaît pendant que la courbe s'efface, jusqu'à l'écran de fin
 const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
+/* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
+// Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
+const VOL_COUL='#b4583a';
+const volPaths=[0,1,2].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('fill','none');p.setAttribute('stroke',VOL_COUL);p.setAttribute('stroke-width','1.5');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.setAttribute('opacity','0');
+  $('volG').appendChild(p);return p});
+// Devant le soleil : un passage environ toutes les 30 à 45 s (le premier vers 12 s), parfois à deux ; chaque traversée dure 18 à 24 s.
+// Ils volent entre les textes et l'encadré de la courbe, pour ne jamais passer derrière un mot.
+function prevoirVols(){const v=[];let t=60;
+  while(t<720){const dur=18+Math.random()*6;
+    v.push({t,dur,dir:Math.random()<.5?1:-1,y:100+Math.random()*22,s:1.05+Math.random()*.35,deux:Math.random()<.45,ph:Math.random()*6.28});
+    t+=dur+12+Math.random()*15}
+  return v}
+// Entre les nuages (Julien, 18 nov.) : de temps en temps, un oiseau seul de gauche à droite, entre le nuage le plus bas
+// et les deux plus hauts (hauteur calculée sur les nuages du paysage). Le premier vers 35 s, puis toutes les 50 à 80 s.
+function hauteurEntreNuages(){const ys=[...$('scene').querySelectorAll('.pfclouds rect')].map(r=>+r.getAttribute('y'));
+  if(ys.length<6)return 112;
+  const nuages=[0,2,4].map(i=>[Math.min(ys[i],ys[i+1]),Math.max(ys[i],ys[i+1])+9]).sort((a,b)=>a[0]-b[0]);
+  return (nuages[1][1]+nuages[2][0])/2}
+function prevoirVolsNuages(){const v=[],y=hauteurEntreNuages();let t=85+Math.random()*10;
+  while(t<720){const dur=19+Math.random()*4;v.push({t,dur,dir:1,y,s:.95+Math.random()*.15,deux:false,ph:Math.random()*6.28});t+=dur+30+Math.random()*30}
+  return v}
+// Un oiseau : deux ailes en courbe ; k = position des ailes (0 = levées, 1 = baissées).
+function dessinOiseau(k){const bout=-5.2+7.4*k,ctl=-4.2+5.2*k;
+  return `M-9,${bout.toFixed(2)} Q-4.6,${ctl.toFixed(2)} 0,0 Q4.6,${ctl.toFixed(2)} 9,${bout.toFixed(2)}`}
+function poserOiseau(p,el,f,i,houle){
+  const lag=i===1?0.9:0,q=(el-f.t-lag)/f.dur;
+  if(q<0||q>1){p.setAttribute('opacity','0');return}
+  const x0=f.dir>0?-30:420,x=x0+f.dir*450*q-(i===1?f.dir*20:0);
+  const y=f.y+(i===1?11:0)+Math.sin(q*Math.PI*1.4+f.ph)*houle-q*(houle>4?12:3);
+  // battements d'ailes (2,3 par seconde) qui s'adoucissent régulièrement en vol plané
+  const tt=el-lag+(i===1?.37:0),plane=.3+.7*(.5+.5*Math.cos(2*Math.PI*tt/3.4+f.ph));
+  const k=.5+.5*Math.sin(2*Math.PI*2.3*tt)*plane;
+  p.setAttribute('d',dessinOiseau(k));
+  p.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(f.s*(i===1?.85:1)).toFixed(2)})`);
+  p.setAttribute('opacity',(Math.min(1,q*9,(1-q)*9)*.72).toFixed(2))}
+function vol(el){
+  if(el<0||reduit||!sess){volPaths.forEach(p=>p.setAttribute('opacity','0'));return}
+  if(!sess.vols){sess.vols=prevoirVols();sess.volsNuages=prevoirVolsNuages()}
+  const f=sess.vols.find(v=>el>=v.t&&el<v.t+v.dur+1.2);
+  [0,1].forEach(i=>{const p=volPaths[i];if(!f||(i===1&&!f.deux))p.setAttribute('opacity','0');else poserOiseau(p,el,f,i,7)});
+  const g=sess.volsNuages.find(v=>el>=v.t&&el<v.t+v.dur);
+  if(g)poserOiseau(volPaths[2],el,g,2,3);else volPaths[2].setAttribute('opacity','0')}
+
 function frame(){
   requestAnimationFrame(frame);
   champ();
@@ -996,11 +1041,11 @@ function frame(){
     if(guide.textContent!==GUIDE[s.k])guide.textContent=GUIDE[s.k];
     const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1)}
-    dessinerCrete(Math.max(0,el-.001));
+    dessinerCrete(Math.max(0,el-.001));vol(el);
   }else if(!sess.fin){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
-    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
+    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;vol(-1);$('pap').setAttribute('opacity',0);
     ecrireDoux(MESSAGE_FIN,true);
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
     sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
