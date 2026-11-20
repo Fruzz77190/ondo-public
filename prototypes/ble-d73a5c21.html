@@ -874,7 +874,7 @@ function planifier(g,w,k){
   // 1er cycle, accordé à la musique (do mineur, beaucoup de Fa) : Fa3 à chacune des deux petites inspirations, Do3 à l'expiration.
   // Chaque coup s'efface sous le suivant (frapper).
   // une octave plus haut, à partir du 2e cycle (Julien, 20 nov.)
-  if(k>=S.length)try{frapper(g.n==='Inspire'?'fa5':'do4',w,w+g.d,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
+  if(k>=S.length)try{frapper(g.n==='Inspire'?'fa5':'do4',w,w+g.d,null,g.n==='Inspire'?4:1,w+g.d)   /* Fa5 4 fois plus fort (Julien, 20 nov.) */}catch(e){toast('Gong : '+e.message,8000)}
 }
 
 function tick(){
