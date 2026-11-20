@@ -758,7 +758,7 @@ const NIV={musique:.239*.7*.5,gong:.906};   // cigales encore -50 % (Julien, 18 
 // Champs de blé (Julien, 20 nov.) : la musique « Chant de blé » commence progressivement dès le « 2 » du décompte, lue à partir
 // de 1:50 dans le morceau (le fichier commence à 1:48, d'où MUS_OFF 2), sur 30 s en courbe douce ; pas de vent (il y en a déjà
 // dans la musique) ; un gong grave rythme le souffle dès le 1er cycle : Fa3 aux deux inspirations, Do3 à l'expiration (Julien, 20 nov.).
-const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=30,MUS_OFF=2,MUS_DEPART=.35,MUS_FIN=45;
+const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=30,MUS_OFF=2,MUS_DEPART=.35,MUS_FIN=10;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -806,8 +806,8 @@ function build(t0){
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(MUS_DEPART,t0+MUS_DE);for(let i=1;i<=12;i++){const q=i/12;g.musOn.gain.linearRampToValueAtTime(MUS_DEPART+(1-MUS_DEPART)*Math.sqrt(q),t0+MUS_DE+MUS_DUREE*q)}
-    // à la fin, la musique disparaît en fondu très progressif : de 45 s avant la fin jusqu'à 5 s après (Julien, 20 nov.)
-    g.musOn.gain.setValueAtTime(1,t0+sess.total-MUS_FIN);for(let i=1;i<=16;i++){const q=i/16;g.musOn.gain.linearRampToValueAtTime((1-q)*(1-q),t0+sess.total-MUS_FIN+(MUS_FIN+5)*q)}
+    // à la fin, la musique disparaît en fondu très progressif : sur les 10 dernières secondes (Julien, 20 nov.)
+    g.musOn.gain.setValueAtTime(1,t0+sess.total-MUS_FIN);for(let i=1;i<=16;i++){const q=i/16;g.musOn.gain.linearRampToValueAtTime((1+Math.cos(Math.PI*q))/2,t0+sess.total-MUS_FIN+MUS_FIN*q)}
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
