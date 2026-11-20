@@ -767,7 +767,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['fa5','sib4'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=3').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['fa5','do5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=3').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -792,7 +792,7 @@ function build(t0){
   // 1er cycle : les cigales
   g.cigOn=ctx.createGain();g.cigOn.gain.value=0;g.cigOn.connect(g.sons.u);
   // le feu et les grillons : leur propre interrupteur, branché après le volume général, pour continuer avec la phrase de fin
-  g.feuOn=ctx.createGain();g.feuOn.gain.setValueAtTime(0,t0-.5);g.feuOn.gain.linearRampToValueAtTime(1,t0+2);const fv=ctx.createGain();fv.gain.value=VOL.sons*RV.sons;g.feuOn.connect(fv).connect(g.mute);
+  g.feuOn=ctx.createGain();g.feuOn.gain.setValueAtTime(0,t0-.5);g.feuOn.gain.linearRampToValueAtTime(1,t0+2);const fv=ctx.createGain();fv.gain.value=VOL.sons*RV.sons;g.feuMute=ctx.createGain();g.feuMute.gain.value=muet?0:1;g.feuOn.connect(fv).connect(g.feuMute).connect(ctx.destination);fv.gain.setValueAtTime(VOL.sons*RV.sons,t0-2);fv.gain.linearRampToValueAtTime(VOL.sons*RV.sons*1.3,t0+3);
   // 2e cycle : le vent dans la lavande, qui respire avec toi
   g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T);x.gain.linearRampToValueAtTime(1,t0+T+8)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
   const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
@@ -814,7 +814,7 @@ function build(t0){
   g.gongFin=ctx.createGain();g.gongFin.gain.value=VOL.sons*RV.gong;g.gongFin.connect(g.out);
   return g;
 }
-function applyMute(){if(G&&ctx)G.mute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08)}
+function applyMute(){if(G&&ctx){G.mute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08);if(G.feuMute)G.feuMute.gain.setTargetAtTime(muet?0:1,ctx.currentTime,.08)}}
 $('btnSon').addEventListener('click',e=>{e.stopPropagation();muet=!muet;try{localStorage.setItem('ondo-proto-muet',muet?'1':'0')}catch(err){}renderSon();applyMute()});
 
 // Une frappe de gong. Il s'efface nettement pendant la dernière seconde de l'inspire (ou de l'expire) : -12 dB en haut de la courbe
@@ -873,7 +873,7 @@ function planifier(g,w,k){
   // du col des pins (si bémol majeur) : Fa5 au début de l'inspire, Si bémol4 au début du soupir ; rien pendant les pauses.
   if(k<S.length||g.n==='Pause')return;
   const suivante=w+g.d+S[(k+1)%S.length].d;
-  try{frapper(g.n==='Inspire'?'fa5':'sib4',w,suivante,null,1,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
+  try{frapper(g.n==='Inspire'?'fa5':'do5',w,suivante,null,1,w+g.d)}   /* soupir un ton plus haut : Do5 (Julien, 21 nov.) */catch(e){toast('Gong : '+e.message,8000)}
 }
 
 function tick(){
