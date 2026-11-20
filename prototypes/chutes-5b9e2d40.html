@@ -425,8 +425,8 @@ function planifierSouffles(w0,depuis){
     // le souffle de Julien commence par une expiration : on joue l'inspiration à « Inspire fort », l'expiration à « Relâche »
     jouer('souffle-inspire',w,NIV.souffle);jouer('souffle-expire',w+INS,NIV.souffle);
     // le tambour chamanique : dès la 3e inspiration au 1er tour (Julien, 20 nov.), dès le 1er souffle aux tours suivants ; un coup à chaque inspire et à chaque expire
-    if(sess.tour>0||i>=2){// deux fois plus de coups (Julien, 20 nov.) : au début et au milieu de l'inspire, au début et au milieu de l'expire
-      jouer('tambour-1',w,NIV.tambour);jouer('tambour-2',w+INS/2,NIV.tambour*.8);jouer('tambour-1',w+INS,NIV.tambour*.9);jouer('tambour-2',w+INS+(SOUF-INS)/2,NIV.tambour*.75)}}
+    if(sess.tour>0||i>=2){// un rythme régulier (Julien, 20 nov.) : 4 coups également espacés par souffle (toutes les 0,875 s), le 1er sur le début de l'inspire
+      for(let j=0;j<4;j++)jouer(j%2?'tambour-2':'tambour-1',w+j*SOUF/4,NIV.tambour*(j===0?1:j===2?.9:.78))}}
   // la flûte de bambou aussi à 40 s des souffles, à chaque tour (Julien, 20 nov.)
   if(depuis*SOUF<=40)jouer('flute',w0+40,NIV.flute);
   const m=w0+NB*SOUF-5;if(m>ctx.currentTime-1){G.musOn.gain.setValueAtTime(0,Math.max(m,ctx.currentTime));G.musOn.gain.linearRampToValueAtTime(1,Math.max(m,ctx.currentTime)+4)}
