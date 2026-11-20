@@ -380,12 +380,12 @@ function passerHorlogeTel(t){clock.audio=false;clock.base=performance.now()/1000
 // Tous ramenés à -20 LUFS (le souffle, les deux coups de tambour, la flûte un peu moins, la musique de la forêt de brume).
 // La cascade : 40 s du fichier de Julien, bouclées sans couture et jouées en mémoire ; la musique reste le seul long fichier lu.
 const SONS='sons-chutes-5b9e2d40/';
-const NIV={cascade:.24,souffle:.105,tambour:1.68,flute:.51,musique:.239};
+const NIV={cascade:.24,souffle:.105,tambour:1.88,flute:.51,musique:.239};
 const VOL={musique:1.15,sons:.75};
 function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-volumes')||'{}'),f=x=>typeof x==='number'&&x>=0&&x<=1.5?x:1;
   return{musique:f(v.musique),sons:f(v.sons),gong:f(v.gong)}}catch(e){return{musique:1,sons:1,gong:1}}}
 const COURTS=['cascade','souffle-inspire','souffle-expire','souffle-inspire-fond','souffle-expire-long','tambour-1','tambour-2','flute'];
-const charges=Promise.all(COURTS.map(n=>fetch(SONS+n+'.m4a').then(r=>{if(!r.ok)throw new Error(n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const charges=Promise.all(COURTS.map(n=>fetch(SONS+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error(n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 const BUF={};let decodage=null;
 function decoder(){if(decodage)return decodage;decodage=charges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{BUF[n]=d;ok()},e=>ko(e||new Error(n)))))))
   .catch(e=>{decodage=null;toast('Sons : '+(e&&e.message||e),8000)});return decodage}
