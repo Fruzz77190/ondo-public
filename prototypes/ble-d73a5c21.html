@@ -185,13 +185,13 @@ button{font-family:inherit;color:inherit}
       <div>
         <p class="small">Durée</p>
         <div class="seg" id="segDuree">
-          <button data-v="1" aria-pressed="false">1 min</button>
-          <button data-v="3" aria-pressed="true">3 min</button>
+          <button data-v="1" aria-pressed="true">1 min</button>
+          <button data-v="3" aria-pressed="false">3 min</button>
           <button data-v="5" aria-pressed="false">5 min</button>
         </div>
       </div>
       <div class="push">
-        <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 3 min</span></button>
+        <button class="btn plein" id="btnGo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l14 9-14 9V3z"/></svg><span id="btnGoTxt">Commencer · 1 min</span></button>
       </div>
     </div>
   </div>
@@ -690,7 +690,7 @@ function renderSon(){$('icoSon').hidden=muet;$('icoMuet').hidden=!muet;$('btnSon
 renderSon();
 
 /* ---------- Fiche : durée comme dans la V1 (3, 5 ou 10 min, 3 min par défaut) ---------- */
-let duree=3;
+let duree=1;
 $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;duree=+b.dataset.v;$('segDuree').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('btnGoTxt').textContent='Commencer · '+duree+' min'});
 
 /* ---------- Paysages (scène du kit, identique à l'app) ---------- */
@@ -707,7 +707,7 @@ const MOTS=['Inspire','Expire'];
 const GUIDE=['Inspire…','Encore…','Comme le vent dans les blés…'];
 // Les messages doux, écrits seulement : chacun reste 10 secondes, dans tous les lieux (Julien, 18 nov. 2026).
 const MESSAGES=[
-  {de:60,a:70,texte:'Si tu le souhaites, tu peux fermer les yeux et te laisser guider par le gong.'},
+  {de:60,a:70,texte:'Continue comme ça.'},
   {de:120,a:130,texte:'Tu fais ça très bien, laisse-toi guider.'},
   // séances de 5 et 10 min : une phrase de 10 s au début des minutes 3 à 9 (validées par Julien le 18 nov., minute 8 réécrite par lui)
   {de:180,a:190,texte:"Laisse chaque expiration t'alléger un peu plus."},
