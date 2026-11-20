@@ -49,6 +49,8 @@ button{font-family:inherit;color:inherit}
 /* la phrase de fin : d'un bloc, en fondu (Julien, 18 nov.) */
 .doux.entier{opacity:0;animation:entier 1.8s ease .3s forwards}
 @keyframes entier{to{opacity:1}}
+/* dunes : le mot et le chiffre plus petits et plus haut, pour ne pas toucher le soleil (Julien, 20 nov.) */
+.phase{top:104px}.word{font:600 40px/48px var(--font)}.count{font:800 46px/50px var(--font)}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -366,10 +368,12 @@ $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if
 
 /* ---------- Paysages (scène du kit, identique à l'app) ---------- */
 let SC=null;
+// pas d'oiseaux immobiles dans le ciel (Julien, 20 nov.)
+const sansOiseauxFixes=svg=>svg.querySelectorAll('path[fill="none"][stroke-width="1.4"]').forEach(p=>p.remove());
 try{pfScenes.dunesBas=Object.assign({},pfScenes.dunes,{sunY:.38});   // soleil un peu plus bas (app : .30)
-  SC=pfScene($('scene'),'dunesBas',{w:390,h:844,seed:5});SC.breathe(0);
-  pfScene($('sceneFiche'),'dunes',{w:390,h:270,seed:5}).breathe(.85);
-  pfScene($('sceneApres'),'dunes',{w:390,h:190,seed:5}).breathe(.85)}catch(e){toast('Paysage : '+e.message,8000)}
+  SC=pfScene($('scene'),'dunesBas',{w:390,h:844,seed:5});sansOiseauxFixes($('scene'));SC.breathe(0);
+  pfScene($('sceneFiche'),'dunes',{w:390,h:270,seed:5}).breathe(.85);sansOiseauxFixes($('sceneFiche'));
+  pfScene($('sceneApres'),'dunes',{w:390,h:190,seed:5}).breathe(.85);sansOiseauxFixes($('sceneApres'))}catch(e){toast('Paysage : '+e.message,8000)}
 
 /* ---------- Le rythme : 3 s / 3 s avec battements de 1 s (comme dans l'app) ---------- */
 const ease=x=>(1-Math.cos(Math.PI*x))/2;
@@ -434,7 +438,8 @@ const NIV={musique:.239,gong:.906};   // cigales encore -50 % (Julien, 18 nov.)
 // la musique au 3e cycle, qui arrive progressivement (sur 2 cycles) pendant que le vent baisse un peu ; le gong 2 cycles plus tard ;
 // 30 s avant la fin, la musique s'efface (en 15 s) et le vent remonte un peu : on finit avec le vent et le gong.
 // La musique commence 1,6 s dans le morceau (son début est silencieux).
-const AVEC_MUSIQUE=true,FONDU_DE=2*T,FONDU_DUREE=2*T,GONG_CYCLE=4,MUS_OFF=1.6,FIN_MUS=30,FIN_MUS_DUREE=15,BOURRASQUE_PIC=.3;
+// v=3 (Julien, 20 nov.) : plus de bourrasque ; la musique dès le « 2 » du décompte, jusqu'au haut de la 1re inspire ; le vent au 2e cycle.
+const AVEC_MUSIQUE=true,MUS_DE=-2,MUS_DUREE=2+S[0].d+S[1].d,FONDU_DE=MUS_DE,FONDU_DUREE=MUS_DUREE,GONG_CYCLE=4,MUS_OFF=1.6,FIN_MUS=30,FIN_MUS_DUREE=15,BOURRASQUE_PIC=.3;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
 const DIAG={frappes:0,manque:0,derniere:'—',err:''};
@@ -469,7 +474,7 @@ function build(t0){
   // 1er cycle : les cigales
   // (pas de son d'ambiance ici : le vent fait l'ambiance)
   // 2e cycle : le vent dans la lavande, qui respire avec toi
-  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.linearRampToValueAtTime(1,t0+.3)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
+  g.ventOn=ctx.createGain();g.oisRevOn=ctx.createGain();[g.ventOn,g.oisRevOn].forEach(x=>{x.gain.value=0;x.gain.setValueAtTime(0,t0-1);x.gain.setValueAtTime(0,t0+T-.5);x.gain.linearRampToValueAtTime(1,t0+T+.3)});g.ventOn.connect(g.sons.u);g.oisRevOn.connect(g.sons.rev);
   const ws=ctx.createBufferSource();ws.buffer=brown;ws.loop=true;
   g.windLp=ctx.createBiquadFilter();g.windLp.type='lowpass';g.windLp.frequency.value=280;g.windLp.Q.value=.4;
   g.wind=ctx.createGain();g.wind.gain.value=.03;ws.connect(g.windLp).connect(g.wind).connect(g.ventOn);ws.start();g.srcs.push(ws);
@@ -480,11 +485,11 @@ function build(t0){
   // vent : le niveau de la vallée de l'aube +15 % au début ; il baisse de 30 % pendant que la musique arrive ; 30 s avant la fin,
   // pendant que la musique s'efface, il remonte de 30 % (Julien, 20 nov.)
   const VD=1.58*.8*.5*1.5*1.1*1.15,lin=(t,a,d)=>t<=a?0:Math.min(1,(t-a)/d);
-  g.ventNiv=t=>VD*(1-.3*lin(t,t0+FONDU_DE,FONDU_DUREE))*(1+.3*lin(t,t0+sess.total-FIN_MUS,FIN_MUS_DUREE));
-  if(t0-ctx.currentTime>2)bourrasqueDecompte(g,t0);   // pas de bourrasque si on saute dans la séance
+  // (v=3) le vent arrive au 2e cycle, la musique déjà là : il est directement à son niveau « avec musique » (-30 %)
+  g.ventNiv=t=>VD*.7*(1+.3*lin(t,t0+sess.total-FIN_MUS,FIN_MUS_DUREE));
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
-  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-1);g.musOn.gain.setValueAtTime(0,t0+FONDU_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+FONDU_DE+FONDU_DUREE);
+  if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(0,t0+FONDU_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+FONDU_DE+FONDU_DUREE);
     g.musOn.gain.setValueAtTime(1,t0+sess.total-FIN_MUS);g.musOn.gain.linearRampToValueAtTime(0,t0+sess.total-FIN_MUS+FIN_MUS_DUREE);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
@@ -538,7 +543,7 @@ function demarrer(depart=0){
   sess={t0,total,end:t0+total,cycles,k:c0*S.length,next:t0+c0*T,bi:t0+T+3+Math.random()*4,endDone:false,fin:false,lastWord:null,lastPill:-1,msg:-1,son,depart:performance.now(),ctx0:t};
   if(son){try{G=build(t0);decoderGongs();
       // les fichiers démarrent pendant le toucher (iPhone), en silence : leurs interrupteurs s'ouvrent au bon cycle
-      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=0}catch(e){}});
+      LONGS.forEach(n=>{try{MEDIA[n].el.currentTime=Math.max(0,MUS_OFF-(3.2+MUS_DE))}catch(e){}});sess.musDep=true;
       if(depart>0){const debutMus=typeof MUS_DE!=='undefined'?MUS_DE:FONDU_DE;
         LONGS.forEach(n=>{const el=MEDIA[n].el;try{if(n==='musique'){if(depart>debutMus){el.currentTime=depart-debutMus+MUS_OFF;sess.musDep=true}}else el.currentTime=depart+3.2}catch(e){}})}
       jouerMedias()}
