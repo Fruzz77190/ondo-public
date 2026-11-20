@@ -426,6 +426,8 @@ function planifierSouffles(w0,depuis){
     jouer('souffle-inspire',w,NIV.souffle);jouer('souffle-expire',w+INS,NIV.souffle);
     // le tambour chamanique : au bout du 3e souffle au 1er tour, dès le 1er souffle aux tours suivants ; un coup à chaque inspire et à chaque expire
     if(sess.tour>0||i>=3){jouer('tambour-1',w,NIV.tambour);jouer('tambour-2',w+INS,NIV.tambour*.85)}}
+  // la flûte de bambou aussi à 40 s des souffles, à chaque tour (Julien, 20 nov.)
+  if(depuis*SOUF<=40)jouer('flute',w0+40,NIV.flute);
   const m=w0+NB*SOUF-5;if(m>ctx.currentTime-1){G.musOn.gain.setValueAtTime(0,Math.max(m,ctx.currentTime));G.musOn.gain.linearRampToValueAtTime(1,Math.max(m,ctx.currentTime)+4)}
 }
 function sonsEtape(etape,w){if(!G)return;
