@@ -165,9 +165,9 @@ button{font-family:inherit;color:inherit}
   <div class="apnee" id="apnee" hidden>
     <p class="kicker apk">Apnée poumons vides</p>
     <div class="apt" id="apTemps">0:00</div>
-    <button class="hold" id="hold" aria-label="Poser le doigt">
+    <button class="hold" id="hold" aria-label="Je respire">
       <span class="h1"></span><span class="h2"></span>
-      <span class="hb" id="hb"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7a2e1c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><b id="hbTxt">Pose ton doigt</b></span>
+      <span class="hb" id="hb"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#7a2e1c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg><b id="hbTxt">Je respire</b></span>
     </button>
     <p class="apg" id="apGuide">Expire tout l'air…<br>puis pose ton doigt sur le rond.</p>
   </div>
@@ -380,11 +380,11 @@ function passerHorlogeTel(t){clock.audio=false;clock.base=performance.now()/1000
 // Tous ramenés à -20 LUFS (le souffle, les deux coups de tambour, la flûte un peu moins, la musique de la forêt de brume).
 // La cascade : 40 s du fichier de Julien, bouclées sans couture et jouées en mémoire ; la musique reste le seul long fichier lu.
 const SONS='sons-chutes-5b9e2d40/';
-const NIV={cascade:.24,souffle:.105,tambour:1.88,flute:.51,musique:.239};
+const NIV={cascade:.24,souffle:.105,tambour:1.88,flute:.51,carillon:.7,musique:.239};
 const VOL={musique:1.15,sons:.75};
 function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-volumes')||'{}'),f=x=>typeof x==='number'&&x>=0&&x<=1.5?x:1;
   return{musique:f(v.musique),sons:f(v.sons),gong:f(v.gong)}}catch(e){return{musique:1,sons:1,gong:1}}}
-const COURTS=['cascade','souffle-inspire','souffle-expire','souffle-inspire-fond','souffle-expire-long','tambour-1','tambour-2','flute'];
+const COURTS=['carillon','cascade','souffle-inspire','souffle-expire','souffle-inspire-fond','souffle-expire-long','tambour-1','tambour-2','flute'];
 const charges=Promise.all(COURTS.map(n=>fetch(SONS+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error(n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 const BUF={};let decodage=null;
 function decoder(){if(decodage)return decodage;decodage=charges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{BUF[n]=d;ok()},e=>ko(e||new Error(n)))))))
@@ -394,7 +394,8 @@ const MUS_OFF=8;   // le début du morceau est presque muet (comme à la forêt 
 
 let G=null,sess=null;
 function build(t){const g={};
-  g.mute=ctx.createGain();g.mute.gain.value=muet?0:1;g.out=ctx.createGain();
+  g.mute=ctx.createGain();g.mute.gain.value=muet?0:1;g.out=ctx.createGain();g.out.gain.value=1.25;   // volume global +25 % (Julien, 20 nov.)
+ 
   const comp=ctx.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=3;comp.attack.value=.01;comp.release.value=.3;
   g.out.connect(g.mute).connect(comp).connect(ctx.destination);
   const RV=lireVolumes();
@@ -434,7 +435,7 @@ function planifierSouffles(w0,depuis){
 function sonsEtape(etape,w){if(!G)return;
   if(etape==='souffles'){if(sess.tour>0)musique(0,w,5);
     const go=()=>planifierSouffles(w-0,sess.depuis||0);if(BUF['souffle-inspire'])go();else if(decodage)decodage.then(()=>{if(sess&&sess.etape==='souffles')go()})}
-  else if(etape==='inspire'){jouer('souffle-inspire-fond',w,NIV.souffle);jouer('flute',w,NIV.flute)}   // la flûte de bambou à l'inspire après l'apnée
+  else if(etape==='inspire'){jouer('souffle-inspire-fond',w,NIV.souffle);jouer('carillon',w,NIV.carillon)}   // le carillon (1) à l'inspire après l'apnée, bien audible (Julien, 20 nov. : à la place de la flûte)
   else if(etape==='expire')jouer('souffle-expire-long',w,NIV.souffle)}
 function couperPrevus(){if(!G||!ctx)return;const n=ctx.currentTime;G.srcs=G.srcs.filter(x=>{if(x.w>n-.01){try{x.s.stop()}catch(e){}return false}return true})}
 
@@ -475,7 +476,7 @@ function tick(){if(!sess||sess.fin){if(sess&&sess.fin&&!sess.ecran&&now()>=sess.
   if(!$('pause').hidden)return;
   const t=now()-sess.debut,e=sess.etape;
   if(e==='decompte'){if(t>=DECOMPTE)commencer('souffles',0)}
-  else if(e==='souffles'){if(t>=NB*SOUF){sess.depuis=0;commencer('attente')}}
+  else if(e==='souffles'){if(t>=NB*SOUF){sess.depuis=0;commencer('apnee')}}
   else if(e==='apnee'){if(t>=APMAX)lever(true)}
   else if(e==='inspire'){if(t>=IAF)commencer('retiens')}
   else if(e==='retiens'){if(t>=RET)commencer('expire')}
@@ -486,11 +487,11 @@ function ecranFin(){sess.ecran=true;['bas','btnPause'].forEach(id=>$(id).style.o
   const f=$('fin');f.style.transition='none';f.style.opacity=0;f.hidden=false;void f.offsetWidth;f.style.transition='opacity 1.2s ease';f.style.opacity=1;
   setTimeout(()=>{try{musEl.pause()}catch(e){}},7000);if(sess.wake){try{sess.wake.release()}catch(e){}}}
 
-/* L'apnée : le doigt se pose, le chrono part ; il se lève (ou 3 min passent), on inspire à fond */
-function poser(e){if(e)e.preventDefault();if(!sess||sess.etape!=='attente')return;commencer('apnee')}
+/* L'apnée (Julien, 20 nov.) : elle commence seule après les 20 souffles ; on appuie sur le rond quand on a besoin de respirer
+   (ou au bout de 3 min), puis on inspire à fond */
+function poser(e){if(e)e.preventDefault();lever()}
 function lever(arretDoux){if(!sess||sess.etape!=='apnee')return;sess.apnees[sess.tour]=Math.min(APMAX,now()-sess.debut);commencer('inspire');sess.arretDoux=arretDoux===true}
-$('hold').addEventListener('pointerdown',poser);
-['pointerup','pointercancel'].forEach(ev=>$('hold').addEventListener(ev,()=>lever()));
+$('hold').addEventListener('click',e=>{e.stopPropagation();lever()});
 $('hold').addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ---------- Pause (pas pendant l'apnée : là, c'est le doigt qui décide) ---------- */
@@ -565,8 +566,8 @@ function montrer(){if(!sess)return;const e=sess.etape;
   const tr=Math.min(tours,sess.tour+(e==='entre'?2:1));$('titre').textContent='Tour '+tr+' sur '+tours;
   const ph=e==='attente'||e==='apnee'?1:e==='inspire'||e==='retiens'||e==='expire'?2:0;
   [0,1,2].forEach(i=>$('ph'+i).classList.toggle('on',i===ph&&e!=='entre'));
-  if(e==='attente'||e==='apnee'){const pose=e==='apnee';$('hbTxt').textContent=pose?'Doigt posé':'Pose ton doigt';$('hb').classList.toggle('attend',!pose);
-    $('apGuide').innerHTML=pose?"Garde ton doigt posé jusqu'à ce que<br>tu aies envie de respirer.":"Expire tout l'air…<br>puis pose ton doigt sur le rond."}
+  if(e==='attente'||e==='apnee'){const pose=e==='apnee';$('hbTxt').textContent='Je respire';$('hb').classList.add('attend');
+    $('apGuide').innerHTML="Expire tout l'air et garde les poumons vides…<br>Appuie sur le rond quand tu as besoin de respirer."}
   if(e==='entre'){$('entreK').textContent='Tour '+(sess.tour+1)+' terminé';$('entreT').textContent=mmss(sess.apnees[sess.tour]||0);$('entreN').textContent='Le tour '+(sess.tour+2)+' commence…'}}
 function perles(n,cur){PERLES.forEach((c,k)=>{c.setAttribute('opacity',k<=n?.95:.35);c.setAttribute('fill',k===cur?'#ffd27a':'#fff9f3');c.setAttribute('r',k===cur?8:6)})}
 function frame(){requestAnimationFrame(frame);animer(performance.now()/1000);vol(sess&&!sess.fin?now()-sess.depart0:-1);if(!sess||sess.fin)return;
