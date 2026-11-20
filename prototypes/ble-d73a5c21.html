@@ -871,12 +871,11 @@ function demarrer(depart=0){
 }
 
 function planifier(g,w,k){
-  // champs de blé (Julien, 20 nov.) : pas de vent (il y en a déjà dans la musique) ; le gong rythme le souffle à partir du 2e cycle,
+  // champs de blé (Julien, 20 nov.) : pas de vent (il y en a déjà dans la musique) ; le gong rythme le souffle dès le 1er cycle,
   // accordé à la musique (do mineur, beaucoup de Fa) : Fa5 à CHACUNE des deux petites inspirations, Do4 à l'expiration.
   // Les fichiers viennent du gong « à pleine force dès la frappe » de la lavande (ceux d'avant commençaient par un silence).
-  // Niveaux : inspire +50 %, expire -30 % puis encore -50 % (Julien, 20 nov.).
-  if(k<S.length)return;
-  try{if(g.n==='Inspire')frapperInspire('fa5',w,1.5);else frapper('do4',w,w+g.d,null,.35,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
+  // Niveaux (Julien, 20 nov.) : inspire 0,75 (+50 % puis -50 %), expire 0,35 (-30 % puis -50 %).
+  try{if(g.n==='Inspire')frapperInspire('fa5',w,.75);else frapper('do4',w,w+g.d,null,.35,w+g.d)}catch(e){toast('Gong : '+e.message,8000)}
 }
 // Un coup bref pour chaque petite inspiration (1 s) : pleine force jusqu'à la fin de l'inspiration, puis il s'efface sous le coup suivant.
 function frapperInspire(nom,w,niv){const b=GONGS[nom];if(!b||!G){DIAG.manque++;return}DIAG.frappes++;DIAG.derniere=nom+' à '+Math.round(w-sess.t0)+' s';
