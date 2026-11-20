@@ -563,9 +563,16 @@ function planifier(g,w,k){
   if(raf&&i===0){w1*=B;f1=1600;r1*=1.5}
   else if(raf&&i===1){w0*=B;w1*=Bp;f0=1600;f1=1350;r0*=1.5;r1*=1.3}
   else if(raf&&i===2){w0*=Bp;f0=1350;r0*=1.3}
-  follow(G.wind.gain,w,g.d,w0*v0,w1*v1);
-  follow(G.windLp.frequency,w,g.d,f0,f1);
-  follow(G.rustle.gain,w,g.d,r0*v0,r1*v1);
+  // (Julien, 20 nov.) à l'expire, le vent dure une seconde de plus : il continue de décroître pendant la pause qui suit
+  // (4 s au lieu de 3) ; cette pause ne touche donc plus au vent.
+  if(i===3)return gongDunes(g,w,k);
+  const dv=i===2?g.d+S[3].d:g.d;
+  follow(G.wind.gain,w,dv,w0*v0,w1*G.ventNiv(w+dv));
+  follow(G.windLp.frequency,w,dv,f0,f1);
+  follow(G.rustle.gain,w,dv,r0*v0,r1*G.ventNiv(w+dv));
+  gongDunes(g,w,k);
+}
+function gongDunes(g,w,k){
   // le gong deux cycles après la musique (5e cycle) : Fa au début de l'inspire, Do au début de l'expire (la musique est en fa majeur)
   if(Math.floor(k/S.length)>=GONG_CYCLE&&(g.n==='Inspire'||g.n==='Expire')){
     const suivante=w+g.d+S[(k+1)%S.length].d;
