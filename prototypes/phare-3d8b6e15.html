@@ -51,6 +51,7 @@ button{font-family:inherit;color:inherit}
 @keyframes entier{to{opacity:1}}
 /* le phare : les textes plus bas, comme dans l'app (texteY 330) */
 #phaseBox{top:330px}
+#phaseBox .zone{order:-1;margin-bottom:8px}
 .bas{position:absolute;left:24px;right:24px;bottom:44px;pointer-events:none}
 .panel{padding:16px 20px;border-radius:22px;background:var(--panel)}
 .phases{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
@@ -433,13 +434,13 @@ function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-v
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-phare-3d8b6e15/';
 // Mêmes niveaux que les autres lieux ; la mer comme à la baie des lucioles ; la mouette lointaine.
-const NIV={musique:.239,gong:.906,mer:.08,mouette:.16};   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239,gong:.906,mer:.08,mouette:.096};   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Le phare du soir (Julien, 21 nov.) : la mer dès le « 2 » du décompte ; la musique de la forêt de brume arrive progressivement
 // en 9 s à partir de la 1re rétention (Julien, 21 nov.) (on la prend à 8 s : son début est presque muet) ; le gong au 3e cycle ;
-// 30 s avant la fin, la musique s'efface en 10 s et il ne reste que la mer (et le gong).
+// la musique s'efface de 20 s à 10 s avant la fin (Julien, 21 nov. : décalé de 10 s) ; les 10 dernières secondes, seulement la mer et le gong.
 const AVEC_MUSIQUE=true,MUS_DE=4,MUS_DUREE=9,MUS_OFF=8,GONG_CYCLE=2;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
@@ -450,7 +451,7 @@ const MEDIA={};
 function media(nom){if(!MEDIA[nom]){const el=new Audio(SONS+nom+'.m4a');el.preload='auto';el.setAttribute('playsinline','');MEDIA[nom]={el,src:null}}return MEDIA[nom]}
 media('musique');
 const GONGS={};let gongsEnCours=null;
-const gongsCharges=Promise.all(['re5','sol4','sib4','mib5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
+const gongsCharges=Promise.all(['sol4','sib4','mib5','sib5'].map(n=>fetch(SONS+'gong-'+n+'.m4a?v=2').then(r=>{if(!r.ok)throw new Error('gong '+n+' : '+r.status);return r.arrayBuffer()}).then(b=>[n,b])));
 function decoderGongs(){if(gongsEnCours)return gongsEnCours;
   gongsEnCours=gongsCharges.then(l=>Promise.all(l.map(([n,b])=>new Promise((ok,ko)=>ctx.decodeAudioData(b.slice(0),d=>{GONGS[n]=d;ok()},e=>ko(e||new Error('gong '+n)))))))
     .catch(e=>{gongsEnCours=null;DIAG.err=String(e&&e.message||e);toast('Gong : '+DIAG.err,8000)});return gongsEnCours}
@@ -488,7 +489,7 @@ function build(t0){
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(0,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
-    g.musOn.gain.setValueAtTime(1,t0+sess.total-30);g.musOn.gain.linearRampToValueAtTime(0,t0+sess.total-20);
+    g.musOn.gain.setValueAtTime(1,t0+sess.total-20);g.musOn.gain.linearRampToValueAtTime(0,t0+sess.total-10);
     const ml=ctx.createGain();ml.gain.value=NIV.musique;MEDIA.musique.src.connect(ml).connect(g.musOn)}
   // 4e cycle : le gong qui guide le souffle (les frappes sont posées par planifier)
   g.gong=ctx.createGain();g.gong.gain.value=RV.gong/vs;g.gong.connect(g.sons.u);   // (compense le volume des sons : le gong suit son propre réglage)
@@ -566,13 +567,13 @@ function tick(){
   const n=ctx.currentTime,H=n+3,stop=sess.end+12;
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
   // la mouette au loin : vers 50 s, puis toutes les minutes (Julien, 21 nov.)
-  while(sess.mouette&&sess.mouette<H&&sess.mouette<sess.end){mouette(sess.mouette);sess.mouette+=60}
+  while(sess.mouette&&sess.mouette<H&&sess.mouette<sess.end-20){mouette(sess.mouette);sess.mouette+=60}
   // la musique repart de son début au moment où elle entre (3e cycle)
   if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+MUS_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=MUS_OFF}catch(e){}}
   // les cigales s'effacent pendant le 3e cycle avant la fin
   if(!sess.endDone&&sess.end<H){sess.endDone=true;const e=sess.end;
     // les trois coups de la fin, avec le gong de Julien : La, Fa dièse, Ré
-    [['re5',.2],['sib4',2.8],['sol4',5.4]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
+    [['mib5',.2],['sib4',2.8],['sol4',5.4],['mib5',5.85],['sib5',6.3]].forEach(([g,dt])=>{try{frapper(g,e+dt,null,G.gongFin,.8)}catch(err){toast('Gong : '+err.message,8000)}});
     G.mus.f.gain.setValueAtTime(1,e+FIN_FONDU);G.mus.f.gain.linearRampToValueAtTime(0,e+FIN_MUSIQUE);   // la musique s'éteint en 5 s, après l'effacement de la courbe
     // tous les sons continuent jusqu'à l'écran de fin, puis décroissent sur 6 s dès qu'il apparaît (Julien, 18 nov., tous les lieux)
     G.sons.f.gain.setValueAtTime(1,e+FIN_ECRAN);G.sons.f.gain.linearRampToValueAtTime(0,e+FIN_ECRAN+6);
@@ -649,8 +650,23 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),lvl=sec<0?0:s.lvl,a
 const SOLEIL=$('scene').querySelector('.pfsun');
 const NUAGES=[...$('scene').querySelectorAll('.pfclouds')].map(g=>{const w=document.createElementNS('http://www.w3.org/2000/svg','g');g.parentNode.insertBefore(w,g);w.appendChild(g);
   const c=g.cloneNode(true);c.setAttribute('transform','translate(-390,0)');w.appendChild(c);return w});
-function decor(el){if(SOLEIL)SOLEIL.setAttribute('transform',`translate(0 ${(70*clamp(el/(sess?sess.total:1))).toFixed(2)})`);
-  const t=performance.now()/1000;NUAGES.forEach(w=>w.setAttribute('transform',`translate(${((t*5)%390).toFixed(1)},0)`))}
+// Le soleil se couche plus vite (Julien, 21 nov.) : il a complètement disparu derrière la mer en même temps que la musique
+// (10 s avant la fin) ; ses halos et son reflet s'effacent avec lui. Pendant le décompte, il est là, entier.
+// Un halo lumineux autour du soleil, comme sur la miniature mais avec une bande en moins (Julien, 21 nov.) : on garde les deux
+// anneaux intérieurs, plus lumineux, et on retire le plus grand.
+if(SOLEIL){const an=[...SOLEIL.querySelectorAll('circle')];if(an.length>3){an[0].remove();an[1].setAttribute('opacity',.34);an[1].setAttribute('fill','#ffd6b0');an[2].setAttribute('opacity',.5);an[2].setAttribute('fill','#ffd6b0')}}
+const HALOS=SOLEIL?[...SOLEIL.querySelectorAll('circle')].slice(0,-1).map(c=>[c,+c.getAttribute('opacity')]):[];
+const REFLET=[...$('scene').children].find(e=>e.tagName==='g'&&e.firstElementChild&&e.firstElementChild.getAttribute('fill')==='#f28c5b');
+// Pendant les 20 dernières secondes, quelques étoiles apparaissent doucement dans le ciel et scintillent.
+const ETOILES=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',g=document.createElementNS(NS,'g');if(SOLEIL)SOLEIL.before(g);else sc.appendChild(g);
+  let r=11;const rnd=()=>{r=(r*16807)%2147483647;return r/2147483647};
+  return Array.from({length:24},(_,i)=>{const c=document.createElementNS(NS,'circle');c.setAttribute('cx',(rnd()*390).toFixed(1));c.setAttribute('cy',(30+rnd()*330).toFixed(1));
+    c.setAttribute('r',(.7+rnd()*1.1).toFixed(2));c.setAttribute('fill','#fff6e8');c.setAttribute('opacity',0);g.appendChild(c);return{c,d:rnd()*16,ph:rnd()*6.28}})})();
+function decor(el){const tot=sess?sess.total:1,p=clamp(el/(tot-10)),q=p*p*(3-2*p);
+  if(SOLEIL)SOLEIL.setAttribute('transform',`translate(0 ${(56*q).toFixed(2)})`);
+  HALOS.forEach(([c,o])=>c.setAttribute('opacity',(o*(1-q)).toFixed(3)));if(REFLET)REFLET.setAttribute('opacity',(1-q).toFixed(3));
+  const t=performance.now()/1000;NUAGES.forEach(w=>w.setAttribute('transform',`translate(${((t*5)%390).toFixed(1)},0)`));
+  ETOILES.forEach(e=>{const a=clamp((el-(tot-20)-e.d)/4);e.c.setAttribute('opacity',(a*(.55+.35*Math.sin(t*1.6+e.ph))).toFixed(3))})}
 
 /* ---------- La mer : 48 s bouclées sans couture, jouées en mémoire (la musique reste le seul long fichier lu) ---------- */
 // Elle commence au « 2 » du décompte (Julien, 21 nov.) et reste jusqu'au bout, après la musique.
@@ -683,7 +699,7 @@ const FIN_ELEMENTS=['bas','btnPause','word','count','guide'],FIN_FONDU=2,FIN_MUS
 const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 /* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
 // Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
-const VOL_COUL='#b4583a';
+const VOL_COUL='#fff6ea';   // oiseaux blancs (Julien, 21 nov.)
 const volPaths=[0,1,2].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
   p.setAttribute('fill','none');p.setAttribute('stroke',VOL_COUL);p.setAttribute('stroke-width','1.5');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.setAttribute('opacity','0');
   $('volG').appendChild(p);return p});
