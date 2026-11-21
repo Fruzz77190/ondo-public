@@ -644,10 +644,11 @@ function dessinerCrete(sec){const s=at(Math.max(0,sec-.001)),lvl=sec<0?0:s.lvl,a
   $('coneF').setAttribute('d',`M${LX},${LY} L${ptF(a-LARGE)} L${ptF(a+LARGE)} Z`);$('coneF').setAttribute('opacity',(.16+.14*lvl).toFixed(3));
   $('coeurF').setAttribute('d',`M${LX},${LY} L${ptF(a-FIN)} L${ptF(a+FIN)} Z`);
   const x=LX+RF*Math.cos(a),y=LY+RF*Math.sin(a);['halo','point'].forEach(id=>{$(id).setAttribute('cx',x.toFixed(1));$(id).setAttribute('cy',y.toFixed(1))});
-  // pendant la rétention, le point respire (Julien, 21 nov., à la place de l'anneau qui se remplissait) : le point et son halo
-  // gonflent doucement puis reviennent à leur taille avant l'expiration
-  const q=sec>=0&&s.g.n==='Retiens'?ease(Math.sin(Math.PI*s.p)):0;
-  $('point').setAttribute('r',(11+4*q).toFixed(2));$('halo').setAttribute('r',(22+16*q).toFixed(2));$('halo').setAttribute('opacity',(.35+.15*q).toFixed(3))}
+  // pendant la rétention, « la veilleuse » (Julien, 21 nov.) : rien ne bouge, seule la lueur autour du point se réchauffe et
+  // s'éclaire doucement (en 1 s), reste ainsi, puis revient à la normale pendant la dernière seconde, avant l'expiration
+  const q=sec>=0&&s.g.n==='Retiens'?ease(Math.min(1,s.p*3,(1-s.p)*3)):0,mix=(a,b)=>Math.round(a+(b-a)*q);
+  $('halo').setAttribute('fill',`rgb(${mix(255,255)},${mix(210,233)},${mix(122,184)})`);$('halo').setAttribute('opacity',(.35+.25*q).toFixed(3));
+  $('point').setAttribute('stroke-width',(3-1.2*q).toFixed(2))}
 
 /* ---------- Le soleil se couche au fil de la séance et passe derrière la mer (comme l'app : 70 points) ; les nuages dérivent (5 pt/s) ---------- */
 const SOLEIL=$('scene').querySelector('.pfsun');
