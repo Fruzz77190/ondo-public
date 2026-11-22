@@ -1108,8 +1108,8 @@ function finirMesure(){const s=(performance.now()-MES.pose)/1000;if(s<1){MES.eta
   MES.etape='fini';MES.mesure=Math.round(s);const E=Math.max(4,MES.mesure);
   $('rytTitre').textContent='Ton expiration : '+MES.mesure+' s';$('rytExp').textContent=E+' s';$('rytDuree').textContent=duree+' min';montrerEcran('ecranRythme')}
 function animerMesure(){if(!MES.etape||$('ecranMesure').hidden)return;const t=(performance.now()-MES.debut)/1000;
-  // « Inspire profondément… » : une seconde sans chiffre, puis un décompte de 5 à 1 (Julien, 22 nov.)
-  if(MES.etape==='inspire'){const r=t<1?6:5-Math.floor(t-1);if(r>0){$('mesMot').textContent='Inspire profondément…';$('mesCompte').textContent=r>5?'':r;$('mesSub').hidden=true;$('mesSmall').hidden=false}
+  // « Inspire profondément… » : une seconde sans chiffre, puis un décompte de 4 à 1 (Julien, 22 nov.)
+  if(MES.etape==='inspire'){const r=t<1?5:4-Math.floor(t-1);if(r>0){$('mesMot').textContent='Inspire profondément…';$('mesCompte').textContent=r>4?'':r;$('mesSub').hidden=true;$('mesSmall').hidden=false}
     else{MES.etape='pret';$('mesBtn').classList.add('vu')}}
   if(MES.etape==='pret'){$('mesMot').textContent='Expire…';$('mesCompte').textContent='0 s';$('mesSub').hidden=false;$('mesSmall').hidden=true;
     $('mesSub').innerHTML="Pose ton doigt sur le bouton et expire le plus doucement possible.<br>Lève le doigt quand tu n'as plus d'air."}
