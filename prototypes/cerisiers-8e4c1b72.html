@@ -1031,11 +1031,12 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 
 // Pas de petits pétales blancs immobiles dans le décor (Julien, 22 nov.)
 ['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(e)e.querySelectorAll('ellipse[rx="2.2"][ry="1.3"]').forEach(x=>x.remove())});
-// Le chemin sur le modèle des dunes du matin (Julien, 22 nov.) : il part du bas à gauche, serpente et s'affine jusqu'à l'horizon
-// (même tracé que scenes.js, chemin des dunes), à la place du chemin droit.
+// Le chemin (Julien, 22 nov.) : un mélange du chemin de l'app (droit) et de celui des dunes (qui serpente), plus large en bas
+// et qui s'affine en montant jusqu'à la crête de la deuxième colline, au-delà de la rangée d'arbres du fond.
 ['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(!e)return;const c=[...e.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='#fbe4dc');if(!c)return;
-  const vb=(e.getAttribute('viewBox')||'0 0 390 844').split(/[ ,]+/).map(Number),W=vb[2],H=vb[3],px=W*.52,nb=H*.86,top=H*.68;
-  c.setAttribute('d',`M${px-46},${H} C${px-10},${H-40} ${px+70},${nb-10} ${W*.6},${top} C${px+60},${nb-6} ${px+10},${H-36} ${px+30},${H} Z`);c.setAttribute('opacity',.9)});
+  const vb=(e.getAttribute('viewBox')||'0 0 390 844').split(/[ ,]+/).map(Number),W=vb[2],H=vb[3],haut=H*.586,N=40,G=[],D=[];
+  for(let i=0;i<=N;i++){const t=i/N,y=H+6-(H+6-haut)*(1-Math.pow(1-t,1.7)),cx=W*(.46+.1*t+.045*Math.sin(Math.PI*1.6*t)),w=W*(.2*Math.pow(1-t,1.6)+.006);G.push([cx-w,y]);D.unshift([cx+w,y])}
+  c.setAttribute('d','M'+G.concat(D).map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join(' L')+' Z');c.setAttribute('opacity',.9)});
 
 /* Les oiseaux (Julien, 22 nov.) : discrets, seulement au début et à la fin : 30 s après le début de l'exercice, un extrait de 20 s ;
    et 50 s avant la fin de la séance, le fichier en entier, jusque sur l'écran suivant. Joués en mémoire. */
