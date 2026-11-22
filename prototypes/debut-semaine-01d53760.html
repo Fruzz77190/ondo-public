@@ -28,7 +28,7 @@ svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
 .lead{font-weight:600;font-size:17px;line-height:25px;text-align:center;color:var(--ink);margin-top:-10px;max-width:330px}
 .zone{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
 #arche{position:relative;width:min(300px,76vw);aspect-ratio:390/520;max-height:100%;border-radius:150px 150px 28px 28px;overflow:hidden;background:var(--card);box-shadow:0 6px 18px rgba(59,44,31,.12)}
-#archeAnim{position:absolute;left:50%;top:0;width:390px;height:780px;transform-origin:top center}
+#archeAnim{position:absolute;inset:0}
 #archeAnim .ui{display:none}
 /* slides 2 et 3 : le lieu en grand, le texte sur une carte crème */
 .bg{position:absolute;inset:0}
@@ -51,7 +51,7 @@ svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro li{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:0 4px 12px rgba(59,44,31,.06);font-weight:600;font-size:15px;line-height:21px}
 #intro li b{display:block;font-weight:800;font-size:16px;margin-bottom:2px}
 #intro .lead{margin-top:10px;max-width:none}
-#intro .bouton{margin-top:auto}
+#intro .bouton{margin-top:auto;margin-bottom:36px}
 .carte.milieu{top:50%;bottom:auto;transform:translateY(-50%)}
 #toast{position:absolute;z-index:60;left:50%;top:45%;transform:translate(-50%,-50%);background:rgba(59,44,31,.9);color:#fff;font-weight:700;font-size:15px;padding:12px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:opacity .3s;text-align:center}
 #toast.on{opacity:1}
@@ -934,15 +934,16 @@ const LIEUX_S={
   b:[["Imiter l'endormissement","En t'endormant, ta respiration ralentit d'elle-même. Les paliers reproduisent cette descente progressive."]]},
  pins:{n:'Le col des pins',tech:'Respiration carrée',r:'4 · 4 · 4 · 4',kind:'p',id:'pins',seed:3,yc:370,anim:el=>{square(el,{kind:'p',id:'pins',seed:3,S:std(4,4,4,4),label:''});drift(el,6)},
   ex:"Quatre temps égaux : inspire, retiens, expire, retiens.",
-  b:[["Respirer pour mieux se concentrer","Dans une étude publiée en 2017, des adultes qui ont pratiqué une respiration lente pendant 8 semaines sont restés concentrés plus longtemps."]]},
+  b:[["Un rythme qui pose l'esprit","Quatre temps égaux, c'est un rythme simple à suivre : ton esprit n'a qu'une chose à faire, suivre le carré. Il se pose et arrête de s'éparpiller."],
+     ["Le calme avant la concentration","Les deux pauses du carré calment ton souffle et ton cœur. Un esprit posé se concentre bien plus facilement qu'un esprit agité."],
+     ["Ton allié avant une tâche importante","Quelques cycles de 4 · 4 · 4 · 4 suffisent pour remettre de l'ordre dans tes pensées avant un examen, une réunion ou un travail qui demande de l'attention."]]},
  temple:{n:'Le temple de la montagne',tech:'Respiration rythmée',r:'4 · 3 · 6',kind:'q',id:'tmpH',seed:10,yc:425,anim:el=>torii(el,{S:std(4,3,6,0),label:''}),
   ex:"Inspire, retiens un instant, puis expire plus longuement.",
   b:[["Se recentrer avant une tâche","Quelques minutes de cette respiration avant de travailler favorisent l'attention."]]},
  bambous:{n:'La forêt de bambous',tech:'Carrée longue',r:'5 · 5 · 5 · 5',kind:'q',id:'bambous',seed:9,yc:370,anim:el=>square(el,{kind:'q',id:'bambous',seed:9,S:std(5,5,5,5),label:'',clear:true}),
   ex:"La respiration carrée, avec des temps plus longs.",
   b:[["Une pratique millénaire","Respirer en temps égaux vient du yoga, où on l'appelle « sama vritti », la respiration égale. Elle y sert depuis des siècles à préparer l'esprit à la concentration."],
-     ["Une attention qui se muscle","Tenir chaque temps de 5 s jusqu'au bout entraîne ton attention comme un muscle : séance après séance, elle reste fixée plus longtemps sur ce que tu fais."],
-     ["Garder son calme quand l'effort dure","Avec des temps plus longs, ton corps apprend à rester calme même quand l'effort se prolonge : un vrai atout pour les tâches longues et exigeantes."]]},
+]},
  dunes:{n:'Les dunes du matin',tech:'Respiration tonique',r:'3 · 3',kind:'p',id:'dunes',seed:5,yc:470,anim:el=>crest(el,{kind:'p',id:'dunes',seed:5,S:std(3,0,3,0),label:'',pxs:32,breathe:true}),
   ex:"Des inspirations amples par le nez, sur un rythme vif.",
   b:[["L'inspiration éveille","Une respiration active stimule ton corps en douceur."]]},
@@ -952,7 +953,7 @@ const LIEUX_S={
  chutes:{n:'Les chutes du soleil',tech:'Breathwork',r:'Souffles + apnée',kind:'q',id:'cascC',seed:6,yc:478,anim:el=>breathwork(el,'cascC'),
   ex:"De grands souffles, une apnée, puis les poumons pleins.",
   b:[["Coup de boost","Cette méthode provoque une libération d'adrénaline et augmente temporairement ta vigilance et ton énergie."]]},
- lavande:{n:'Le champ de lavande',tech:'Expiration longue',r:'4 · 8',kind:'q',id:'lavande',seed:7,yc:470,anim:el=>crest(el,{kind:'q',id:'lavande',seed:7,S:std(4,0,8,0),label:''}),
+ lavande:{n:'Le champ de lavande',tech:'Expiration longue',r:'4 · 8',kind:'q',id:'lavande',seed:7,ah:570,yc:470,anim:el=>crest(el,{kind:'q',id:'lavande',seed:7,S:std(4,0,8,0),label:''}),
   ex:"Inspire par le nez, puis expire doucement et longuement par la bouche.",
   b:[["Expirer pour se calmer","Une étude de Stanford a montré que 5 minutes par jour d'une respiration qui allonge l'expiration diminuent l'anxiété et améliorent l'humeur, plus encore que la méditation."]]},
  phare:{n:'Le phare du soir',tech:'Expiration prolongée',r:'4 · 3 · 6',kind:'p',id:'phare',seed:6,yc:400,anim:el=>beam(el,{S:std(4,3,6,0),label:''}),
@@ -994,9 +995,10 @@ function construire(){
   // slide 1 : encouragement + arche avec la respiration de la semaine
   const [t1,l1]=ENCOURAGE[etat.sem-1];
   $('#s1t').textContent=t1;$('#s1l').textContent=l1;
-  const ph=$('#archeAnim');ph.innerHTML='';const yc=Math.max(260,Math.min(520,L.yc));
-  ph.style.transform=`translate(-50%,0) scale(var(--k)) translateY(${-(yc-260)}px) translateX(${195-(L.xc||195)}px)`;
-  L.anim(ph);const fige=units.splice(0);fige.forEach(u=>u(L.t||2600));
+  // L'arche : seulement le paysage du lieu, dessiné au format de l'arche (moitié sol, moitié ciel), sans la respiration.
+  const ph=$('#archeAnim');ph.innerHTML='';const sv=document.createElementNS(NS,'svg');sv.setAttribute('class','scene');ph.appendChild(sv);
+  const ah=L.ah||520;if(L.kind==='p')pfScene(sv,L.id,{seed:L.seed,w:390,h:ah});else qPlace(sv,L.id,{w:390,h:ah,seed:L.seed});
+  sv.setAttribute('viewBox','0 0 390 520');sv.setAttribute('preserveAspectRatio','xMidYMid slice');
   // slides 2 et 3 : le lieu
   ['#s2bg','#s3bg'].forEach(q=>{$(q).innerHTML='';sceneSVG($(q),L)});
   $('#s2k').textContent=`Semaine ${etat.sem} sur 3 · ${nomPrio}`;
