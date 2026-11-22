@@ -816,7 +816,7 @@ function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-v
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-cerisiers-8e4c1b72/';
 // Mêmes niveaux que les autres lieux ; les oiseaux discrets (Julien) ; l'abeille de synthèse.
-const NIV={musique:.239*1.2,gong:.906,oiseaux:.12,abeille:.025};   // abeille -50 % (Julien, 22 nov.)   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239*1.2,gong:.906,oiseaux:.12,abeille:.025*1.1};   // abeille -50 %, puis +10 % (Julien, 22 nov.)   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
@@ -867,7 +867,7 @@ function build(t0){
   g.rustle=ctx.createGain();g.rustle.gain.value=.004;rs.connect(rhp).connect(g.rustle).connect(g.ventOn);rs.start();g.srcs.push(rs);
   // vent (Julien, 18 nov.) : -50 %, puis -20 % au début ; +10 % pendant que la musique arrive (fondu de 1 min à 1 min 14)
   // le même niveau que le vent de la forêt de bambous
-  g.ventNiv=t=>1.58*.8*.5*1.5*1.1*.7;   // -30 % (Julien, 22 nov.)
+  g.ventNiv=t=>1.58*.8*.5*1.5*1.1*.7*.8;   // -30 %, puis -20 % (Julien, 22 nov.)
   // 3e cycle : la musique de Julien, depuis son début
   g.musOn=ctx.createGain();g.musOn.gain.value=0;g.musOn.connect(g.mus.u);
   if(AVEC_MUSIQUE){g.musOn.gain.setValueAtTime(0,t0-3.5);g.musOn.gain.setValueAtTime(0,t0+MUS_DE);g.musOn.gain.linearRampToValueAtTime(1,t0+MUS_DE+MUS_DUREE);
