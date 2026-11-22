@@ -1031,11 +1031,12 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 
 // Pas de petits pétales blancs immobiles dans le décor (Julien, 22 nov.)
 ['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(e)e.querySelectorAll('ellipse[rx="2.2"][ry="1.3"]').forEach(x=>x.remove())});
-// Le chemin (Julien, 22 nov.) : un mélange du chemin de l'app (droit) et de celui des dunes (qui serpente), plus large en bas
-// et qui s'affine en montant jusqu'à la crête de la deuxième colline, au-delà de la rangée d'arbres du fond.
+// Le chemin (Julien, 22 nov.) : la largeur de départ du chemin de l'app, et il tourne comme celui des dunes du matin (même courbe que
+// scenes.js : il part vers la droite puis revient en s'affinant) ; il monte jusqu'à la crête de la deuxième colline.
 ['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(!e)return;const c=[...e.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='#fbe4dc');if(!c)return;
-  const vb=(e.getAttribute('viewBox')||'0 0 390 844').split(/[ ,]+/).map(Number),W=vb[2],H=vb[3],haut=H*.586,N=40,G=[],D=[];
-  for(let i=0;i<=N;i++){const t=i/N,y=H+6-(H+6-haut)*(1-Math.pow(1-t,1.7)),cx=W*(.46+.1*t+.045*Math.sin(Math.PI*1.6*t)),w=W*(.2*Math.pow(1-t,1.6)+.006);G.push([cx-w,y]);D.unshift([cx+w,y])}
+  const vb=(e.getAttribute('viewBox')||'0 0 390 844').split(/[ ,]+/).map(Number),W=vb[2],H=vb[3],px=W*.52,nb=H*.86,haut=H*.586,N=48,G=[],D=[];
+  const P=[[W*.51,H+4],[px,H-38*H/844],[px+65*W/390,nb-8*H/844],[W*.6,haut]],bz=(t,k)=>{const u=1-t;return u*u*u*P[0][k]+3*u*u*t*P[1][k]+3*u*t*t*P[2][k]+t*t*t*P[3][k]};
+  for(let i=0;i<=N;i++){const t=i/N,x=bz(t,0),y=bz(t,1),w=W*(.07*Math.pow(1-t,1.15)+.004);G.push([x-w,y]);D.unshift([x+w,y])}
   c.setAttribute('d','M'+G.concat(D).map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join(' L')+' Z');c.setAttribute('opacity',.9)});
 
 /* Les oiseaux (Julien, 22 nov.) : discrets, seulement au début et à la fin : 30 s après le début de l'exercice, un extrait de 20 s ;
