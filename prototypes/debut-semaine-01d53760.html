@@ -934,9 +934,7 @@ const LIEUX_S={
   b:[["Imiter l'endormissement","En t'endormant, ta respiration ralentit d'elle-même. Les paliers reproduisent cette descente progressive."]]},
  pins:{n:'Le col des pins',tech:'Respiration carrée',r:'4 · 4 · 4 · 4',kind:'p',id:'pins',seed:3,yc:370,anim:el=>{square(el,{kind:'p',id:'pins',seed:3,S:std(4,4,4,4),label:''});drift(el,6)},
   ex:"Quatre temps égaux : inspire, retiens, expire, retiens.",
-  b:[["Un rythme qui pose l'esprit","Quatre temps égaux, c'est un rythme simple à suivre : ton esprit n'a qu'une chose à faire, suivre le carré. Il se pose et arrête de s'éparpiller."],
-     ["Le calme avant la concentration","Les deux pauses du carré calment ton souffle et ton cœur. Un esprit posé se concentre bien plus facilement qu'un esprit agité."],
-     ["Ton allié avant une tâche importante","Quelques cycles de 4 · 4 · 4 · 4 suffisent pour remettre de l'ordre dans tes pensées avant un examen, une réunion ou un travail qui demande de l'attention."]]},
+  b:[["Ton allié avant une tâche importante","Quelques cycles de 4 · 4 · 4 · 4 suffisent pour remettre de l'ordre dans tes pensées avant un examen, une réunion ou un travail qui demande de l'attention."]]},
  temple:{n:'Le temple de la montagne',tech:'Respiration rythmée',r:'4 · 3 · 6',kind:'q',id:'tmpH',seed:10,yc:425,anim:el=>torii(el,{S:std(4,3,6,0),label:''}),
   ex:"Inspire, retiens un instant, puis expire plus longuement.",
   b:[["Se recentrer avant une tâche","Quelques minutes de cette respiration avant de travailler favorisent l'attention."]]},
@@ -977,6 +975,24 @@ function wheat2(el){scene(el,'q','champs',10);const f=layer(el);const X=[150,240
   units.push(ms=>{const s=at(S,ms/1000);const lv=[0,1].map(i=>{if(s.k===2)return 1-ease(s.p);if(i<s.k)return 1;if(i===s.k)return ease(s.p);return 0});
     F.forEach((r,i)=>{const hh=Math.max(0,(h0-10)*lv[i]);r.setAttribute('height',hh);r.setAttribute('y',y0+h0-5-hh)})})}
 
+/* Retouches de l'arche seulement (Julien, 22 nov.) : le reste du prototype garde les scènes telles quelles. */
+function retoucherArche(id,sv,ret,W,H){const tous=(sel,f)=>sv.querySelectorAll(sel).forEach(f);
+  if(id==='cerisiers'){ // le chemin de l'exercice : largeur de l'app, courbe des dunes, en pointe jusqu'à la crête de la 2e colline
+    const c=[...sv.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='#fbe4dc');if(c){
+      const px=W*.52,nb=H*.86,haut=H*.586,N=48,G=[],D=[];
+      const P=[[W*.51,H+4],[px,H-38*H/844],[px+65*W/390,nb-8*H/844],[W*.6,haut]],bz=(t,k)=>{const u=1-t;return u*u*u*P[0][k]+3*u*u*t*P[1][k]+3*u*t*t*P[2][k]+t*t*t*P[3][k]};
+      for(let i=0;i<=N;i++){const t=i/N,x=bz(t,0),y=bz(t,1),w=W*.07*Math.pow(1-t,1.15);G.push([x-w,y]);D.unshift([x+w,y])}
+      c.setAttribute('d','M'+G.concat(D).map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join(' L')+' Z');c.setAttribute('opacity',.9)}}
+  if(id==='lucioles'){ // sans la lune ni son reflet, deux fois moins de lucioles
+    if(ret&&ret.g)ret.g.remove();tous('rect[height="2.5"][fill="#fbefe4"]',e=>e.remove());
+    if(ret&&ret.ff)[...ret.ff.children].forEach((e,i)=>{if(Math.floor(i/2)%2)e.remove()})}
+  if(id==='lac'){ // sans la lune ni son reflet
+    tous('.pfsun',e=>e.remove());tous('rect[height="3"][fill="#fbefe4"]',e=>e.remove())}
+  if(id==='observatoire'){ // sans la lune ni la voie lactée (la traînée qui descend vers la gauche)
+    if(ret&&ret.g)ret.g.remove();tous('path[fill="#5a5a8e"]',e=>e.parentNode.remove())}
+  if(id==='cascC'){ // sans les plantes du bas
+    tous('g[transform^="rotate"]',e=>e.remove())}}
+
 const $=s=>document.querySelector(s);
 const etat={prio:'Stress',sem:1,var:0,i:0};
 try{const g=JSON.parse(localStorage.getItem('ondo-slides')||'{}');Object.assign(etat,g,{i:0})}catch(e){}
@@ -997,7 +1013,7 @@ function construire(){
   $('#s1t').textContent=t1;$('#s1l').textContent=l1;
   // L'arche : seulement le paysage du lieu, dessiné au format de l'arche (moitié sol, moitié ciel), sans la respiration.
   const ph=$('#archeAnim');ph.innerHTML='';const sv=document.createElementNS(NS,'svg');sv.setAttribute('class','scene');ph.appendChild(sv);
-  const ah=L.ah||520;if(L.kind==='p')pfScene(sv,L.id,{seed:L.seed,w:390,h:ah});else qPlace(sv,L.id,{w:390,h:ah,seed:L.seed});
+  const ah=L.ah||520;const ret=L.kind==='p'?pfScene(sv,L.id,{seed:L.seed,w:390,h:ah}):qPlace(sv,L.id,{w:390,h:ah,seed:L.seed});retoucherArche(L.id,sv,ret,390,ah);
   sv.setAttribute('viewBox','0 0 390 520');sv.setAttribute('preserveAspectRatio','xMidYMid slice');
   // slides 2 et 3 : le lieu
   ['#s2bg','#s3bg'].forEach(q=>{$(q).innerHTML='';sceneSVG($(q),L)});
