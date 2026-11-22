@@ -1031,7 +1031,7 @@ function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webk
   [['fa5',SD+'gong-fa5.m4a'],['do5',SD+'gong-do5.m4a'],['mib5',SP+'gong-mib5.m4a'],['sib4',SP+'gong-sib4.m4a'],['mer',SP+'mer.m4a'],['carillon',SC+'carillon.m4a']].forEach(([k,u])=>{BUF[k]=fetch(u).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,ko)=>ctx.decodeAudioData(b,ok,ko))).catch(()=>null)})}catch(e){}return ctx}
 function gong(k,quand=0){if(!ctx)return;BUF[k].then(b=>{if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=NIV.gong;s.connect(g).connect(gongBus);s.start(ctx.currentTime+quand)})}
 let MER=null;
-function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.setValueAtTime(0,ctx.currentTime);MER.g.gain.linearRampToValueAtTime(NIV.mer*.625,ctx.currentTime+1.2); // avant la respiration : 50 % du volume de départ (.11), pendant : 80 % (.176)MER.g.connect(maitre);
+function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.setValueAtTime(0,ctx.currentTime);MER.g.gain.linearRampToValueAtTime(NIV.mer*.625,ctx.currentTime+1.2);MER.g.connect(maitre); /* avant la respiration : 50 % du volume de départ (.11), pendant : 80 % (.176) */
   BUF.mer.then(b=>{if(!b||!MER)return;const s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.loopStart=Math.min(11.3,b.duration-1);s.loopEnd=Math.min(59.3,b.duration);s.connect(MER.g);s.start(0,Math.min(17.8,b.duration-1));MER.s=s})}
 const MUS=new Audio(SP+'musique.m4a');MUS.preload='auto';MUS.loop=false;let musG=null;
 function musiqueDemarre(){if(!ctx)return;try{if(!musG){const src=ctx.createMediaElementSource(MUS);musG=ctx.createGain();src.connect(musG).connect(maitre)}
@@ -1137,6 +1137,9 @@ $('#e00').onclick=()=>aller('e01');
 const t00=performance.now();
 function loop(now){units.forEach(u=>u(now-t00));requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
+
+// accès de test (vérification du son sans l'écouter)
+window.__onb={get MER(){return MER},get ctx(){return ctx},get maitre(){return maitre}};
 
 })();
 </script>
