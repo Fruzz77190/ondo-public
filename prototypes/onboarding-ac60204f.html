@@ -48,8 +48,8 @@ button{font-family:inherit;cursor:pointer}
 #e00 .txt{position:absolute;left:0;right:0;top:20%;text-align:center}
 #e00 .ondo{font:600 56px Fraunces,serif;color:#6b4e85;opacity:0;transform:translateY(10px)}
 #e00 .phr{font-weight:700;font-size:18px;color:var(--ink);opacity:0;transform:translateY(10px);margin-top:6px}
-#e00.vu .ondo{animation:monte 1.2s ease-out 5.2s forwards}
-#e00.vu .phr{animation:monte 1.1s ease-out 9.2s forwards}
+#e00.vu .ondo{animation:monte 1.2s ease-out 4.2s forwards}
+#e00.vu .phr{animation:monte 1.1s ease-out 7.2s forwards}
 @keyframes monte{to{opacity:1;transform:none}}
 /* 01 */
 #e01 .titre{font-size:30px;line-height:36px;text-align:center;color:var(--prune)}
@@ -57,6 +57,8 @@ button{font-family:inherit;cursor:pointer}
 #e01 .titre,#e01 .arche,#e01 .bouton{opacity:0}
 #e01.vu .titre{animation:fondu 1s ease-out .2s forwards}#e01.vu .arche{animation:fondu 1s ease-out .5s forwards}#e01.vu .bouton{animation:fondu .8s ease-out 1.5s forwards}
 @keyframes fondu{to{opacity:1}}
+#e01.vu{animation:entree 1.2s ease-out}@keyframes entree{from{opacity:0}to{opacity:1}}
+#e09 .lead,#e10 .lead{text-align:center;margin-top:0}
 /* 02 */
 .vignette{position:relative;width:150px;height:180px;border-radius:75px 75px 20px 20px;overflow:hidden;margin:0 auto;box-shadow:0 6px 18px rgba(59,44,31,.12)}
 .champ{height:56px;border-radius:18px;border:0;background:var(--card);box-shadow:0 4px 12px rgba(59,44,31,.06);font:700 20px Nunito;padding:0 18px;color:var(--ink);text-align:center}
@@ -170,11 +172,11 @@ button{font-family:inherit;cursor:pointer}
   <div class="ft"><button class="bouton go" disabled>Continuer</button></div></section>
 
  <section class="ecran" id="e09"><div class="hd"><button class="retour">‹</button><div class="traits"></div></div>
-  <div class="main centre"><h1 class="titre">Ton stress diminue à chaque respiration</h1><div class="arche"></div></div>
+  <div class="main centre"><h1 class="titre">Ton stress diminue à chaque respiration</h1><div class="arche"></div><p class="lead">Quelques minutes par jour suffisent à faire redescendre la pression.</p></div>
   <div class="ft"><button class="bouton go">Continuer</button></div></section>
 
  <section class="ecran" id="e10"><div class="hd"><button class="retour">‹</button><div class="traits"></div></div>
-  <div class="main centre"><h1 class="titre">Ton état émotionnel devient plus stable</h1><div class="arche"></div></div>
+  <div class="main centre"><h1 class="titre">Ton état émotionnel devient plus stable</h1><div class="arche"></div><p class="lead">Ton souffle t'aide à prendre du recul et à réagir plus calmement.</p></div>
   <div class="ft"><button class="bouton go">Continuer</button></div></section>
 
  <section class="ecran" id="e11"><div class="hd"><button class="retour">‹</button><div class="traits"></div></div>
@@ -1021,12 +1023,13 @@ function cheminCerisiers(sv,W,H){const c=[...sv.querySelectorAll('path')].find(p
   c.setAttribute('d','M'+G.concat(D).map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join(' L')+' Z');c.setAttribute('opacity',.9)}
 
 /* —— le son —— */
-const SP='sons-phare-3d8b6e15/',SD='sons-dunes-e4f98bbe/';
+const SP='sons-phare-3d8b6e15/',SD='sons-dunes-e4f98bbe/',SC='sons-chutes-5b9e2d40/',SCe='sons-cerisiers-8e4c1b72/';
 let ctx=null,muet=false,maitre=null;const BUF={};
-const NIV={gong:.55,mer:.11,musique:.30}; // vagues -50 % (Julien)
-function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();maitre=ctx.createGain();maitre.gain.value=muet?0:1;maitre.connect(ctx.destination);
-  [['fa5',SD+'gong-fa5.m4a'],['do5',SD+'gong-do5.m4a'],['mib5',SP+'gong-mib5.m4a'],['sib4',SP+'gong-sib4.m4a'],['mer',SP+'mer.m4a']].forEach(([k,u])=>{BUF[k]=fetch(u).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,ko)=>ctx.decodeAudioData(b,ok,ko))).catch(()=>null)})}catch(e){}return ctx}
-function gong(k,quand=0){if(!ctx)return;BUF[k].then(b=>{if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=NIV.gong;s.connect(g).connect(maitre);s.start(ctx.currentTime+quand)})}
+const NIV={gong:.55,mer:.11,musique:.30,carillon:.45,cerisiers:.12}; // vagues -50 % (Julien) ; musique des cerisiers en fond, volume bas
+let gongBus=null;
+function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();maitre=ctx.createGain();maitre.gain.value=muet?0:1;maitre.connect(ctx.destination);gongBus=ctx.createGain();gongBus.connect(maitre);
+  [['fa5',SD+'gong-fa5.m4a'],['do5',SD+'gong-do5.m4a'],['mib5',SP+'gong-mib5.m4a'],['sib4',SP+'gong-sib4.m4a'],['mer',SP+'mer.m4a'],['carillon',SC+'carillon.m4a']].forEach(([k,u])=>{BUF[k]=fetch(u).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,ko)=>ctx.decodeAudioData(b,ok,ko))).catch(()=>null)})}catch(e){}return ctx}
+function gong(k,quand=0){if(!ctx)return;BUF[k].then(b=>{if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=NIV.gong;s.connect(g).connect(gongBus);s.start(ctx.currentTime+quand)})}
 let MER=null;
 function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.setValueAtTime(0,ctx.currentTime);MER.g.gain.linearRampToValueAtTime(NIV.mer,ctx.currentTime+1.2);MER.g.connect(maitre);
   BUF.mer.then(b=>{if(!b||!MER)return;const s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.loopStart=Math.min(11.3,b.duration-1);s.loopEnd=Math.min(59.3,b.duration);s.connect(MER.g);s.start(0,Math.min(17.8,b.duration-1));MER.s=s})}
@@ -1035,6 +1038,16 @@ function musiqueDemarre(){if(!ctx)return;try{if(!musG){const src=ctx.createMedia
   musG.gain.cancelScheduledValues(ctx.currentTime);musG.gain.setValueAtTime(0,ctx.currentTime);musG.gain.linearRampToValueAtTime(NIV.musique,ctx.currentTime+3);MUS.currentTime=8;MUS.play().catch(()=>{})}catch(e){}}
 function toutEffacer(sec){if(!ctx)return;const t=ctx.currentTime;[MER&&MER.g,musG].forEach(g=>{if(!g)return;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+sec)});
   const m=MER;MER=null;setTimeout(()=>{try{m&&m.s&&m.s.stop()}catch(e){}MUS.pause()},sec*1000+200)}
+// le carillon : joué en entier, même si on passe à l'écran suivant avant la fin
+function carillon(){if(!ctx)return;BUF.carillon.then(b=>{if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=NIV.carillon;s.connect(g).connect(maitre);s.start()})}
+function gongsRetour(){if(gongBus){gongBus.gain.cancelScheduledValues(ctx.currentTime);gongBus.gain.setValueAtTime(1,ctx.currentTime)}}
+// écran 09 : la musique des cerisiers arrive doucement, en fond ; les gongs encore là s'effacent en même temps
+const MUSC=new Audio(SCe+'musique.m4a');MUSC.preload='auto';let muscG=null;
+function musiqueCerisiers(){if(!ctx)return;const t=ctx.currentTime;
+  if(gongBus){gongBus.gain.cancelScheduledValues(t);gongBus.gain.setValueAtTime(gongBus.gain.value,t);gongBus.gain.linearRampToValueAtTime(0,t+4)}
+  if(muscG&&!MUSC.paused)return;
+  try{if(!muscG){const src=ctx.createMediaElementSource(MUSC);muscG=ctx.createGain();src.connect(muscG).connect(maitre)}
+    muscG.gain.cancelScheduledValues(t);muscG.gain.setValueAtTime(0,t);muscG.gain.linearRampToValueAtTime(NIV.cerisiers,t+4);MUSC.currentTime=8.5;MUSC.play().catch(()=>{})}catch(e){}}
 function couperSon(){muet=!muet;if(maitre)maitre.gain.value=muet?0:1;$('#son').textContent=muet?'🔇':'🔊';try{localStorage.setItem('ondo-onb-muet',muet?'1':'')}catch(e){}}
 try{muet=localStorage.getItem('ondo-onb-muet')==='1'}catch(e){}
 
@@ -1049,18 +1062,18 @@ function aller(id){minuteurs.forEach(clearTimeout);minuteurs=[];units.length=0;
 const suivant=()=>aller(ORDRE[Math.min(ORDRE.length-1,ORDRE.indexOf(courant)+1)]);
 const precedent=()=>aller(ORDRE[Math.max(0,ORDRE.indexOf(courant)-1)]);
 const ENTREE={
- e00(){const [sv,sc]=dessin($('#e00 .plein'),'p','d0',4,390,844);
+ e00(){gongsRetour();const [sv,sc]=dessin($('#e00 .plein'),'p','d0',4,390,844);
   $('#e00').classList.remove('vu');void $('#e00').offsetWidth;$('#e00').classList.add('vu');
   // le soleil respire une fois (comme l'app) : il monte en 2,2 s (gong Fa5), puis redescend en 2,4 s (gong Do5)
   const t0=performance.now(),k=x=>(1-Math.cos(Math.PI*x))/2;
   units.push(()=>{const q=(performance.now()-t0)/1000-1;let b=.2;if(q>=0&&q<2.2)b=.2+.8*k(q/2.2);else if(q>=2.2&&q<4.6)b=.2+.8*(1-k((q-2.2)/2.4));if(sc&&sc.breathe)sc.breathe(b)});
-  minuteurs.push(setTimeout(()=>gong('fa5'),5200),setTimeout(()=>gong('do5'),9200),setTimeout(()=>aller('e01'),10700));},
+  minuteurs.push(setTimeout(()=>gong('fa5'),4200),setTimeout(()=>gong('do5'),7200),setTimeout(()=>aller('e01'),10200));},
  e01(){dessin($('#e01 .arche'),'p','ml2',5,300,400);const e=$('#e01');e.classList.remove('vu');void e.offsetWidth;e.classList.add('vu')},
- e02(){dessin($('#e02 .vignette'),'p','a2',5,150,180)},
+ e02(){dessin($('#e02 .vignette'),'p','a2',5,150,180);carillon()},
  e06(){dessin($('#e06 .carte .img'),'p','phareO',6,390,250);merDemarre()},
- e07(){respiration()},
+ e07(){gongsRetour();respiration()},
  e08(){toutEffacer(8);dessin($('#e08 .bandeau'),'p','phareO',6,390,150)},
- e09(){dessin($('#e09 .arche'),'q','champs',10,390,520)},
+ e09(){dessin($('#e09 .arche'),'q','champs',10,390,520);musiqueCerisiers()},
  e10(){dessin($('#e10 .arche'),'q','bambous',9,390,520)},
  e11(){const [sv]=dessin($('#e11 .arche'),'q','cerisiers',11,390,520);cheminCerisiers(sv,390,520)},
  e13(){dessin($('#e13 .carte .img'),'q','refE',4,390,200)},
@@ -1075,6 +1088,8 @@ function respiration(){const el=$('#e07 .plein');el.innerHTML='';
   // le faisceau fixe du dessin est retiré ; le halo du soleil comme la miniature, avec une bande en moins
   [...sc.querySelectorAll('path')].filter(p=>p.getAttribute('fill')==='#ffd27a'&&p.getAttribute('opacity')==='0.22').forEach(p=>p.remove());
   const sol=sc.querySelector('.pfsun');if(sol){const an=[...sol.querySelectorAll('circle')];if(an.length>3){an[0].remove();an[1].setAttribute('opacity',.34);an[1].setAttribute('fill','#ffd6b0');an[2].setAttribute('opacity',.5);an[2].setAttribute('fill','#ffd6b0')}}
+  const nuages=[...sc.querySelectorAll('.pfclouds')].map(g=>{const w=document.createElementNS(NS,'g');g.parentNode.insertBefore(w,g);w.appendChild(g);const c=g.cloneNode(true);c.setAttribute('transform','translate(-390,0)');w.appendChild(c);return w});
+  units.push(()=>{const s=performance.now()/1000;nuages.forEach(w=>w.setAttribute('transform',`translate(${((s*5)%390).toFixed(1)},0)`))});
   const toit=[...sc.querySelectorAll('path')].find(p=>/h12 l-6,-6 Z$/.test(p.getAttribute('d')||''));
   let LX=304,LY=471.7;if(toit){const m=/^M([-\d.]+),([-\d.]+)/.exec(toit.getAttribute('d'));LX=+m[1]+6;LY=+m[2]+46-42}
   const fx=document.createElementNS(NS,'svg');fx.setAttribute('class','scene');fx.setAttribute('viewBox','0 0 390 844');fx.setAttribute('preserveAspectRatio','xMidYMid slice');el.appendChild(fx);
