@@ -258,7 +258,7 @@ button{font-family:inherit;color:inherit}
       <p class="mesSub" id="mesSub" hidden></p>
       <p class="mesSmall" id="mesSmall">Il n'y a pas de bon résultat : on règle simplement la respiration sur toi.</p>
     </div>
-    <div class="mesCompte" id="mesCompte">4</div>
+    <div class="mesCompte" id="mesCompte"></div>
     <button class="mesBtn" id="mesBtn" aria-label="Poser le doigt"><span class="mesJ" id="mesJauge"></span><span class="mesIc"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#7a2e1c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></span></button>
   </div>
 
@@ -1108,7 +1108,8 @@ function finirMesure(){const s=(performance.now()-MES.pose)/1000;if(s<1){MES.eta
   MES.etape='fini';MES.mesure=Math.round(s);const E=Math.max(4,MES.mesure);
   $('rytTitre').textContent='Ton expiration : '+MES.mesure+' s';$('rytExp').textContent=E+' s';$('rytDuree').textContent=duree+' min';montrerEcran('ecranRythme')}
 function animerMesure(){if(!MES.etape||$('ecranMesure').hidden)return;const t=(performance.now()-MES.debut)/1000;
-  if(MES.etape==='inspire'){const r=4-Math.floor(t);if(r>0){$('mesMot').textContent='Inspire profondément…';$('mesCompte').textContent=r;$('mesSub').hidden=true;$('mesSmall').hidden=false}
+  // « Inspire profondément… » : une seconde sans chiffre, puis un décompte de 5 à 1 (Julien, 22 nov.)
+  if(MES.etape==='inspire'){const r=t<1?6:5-Math.floor(t-1);if(r>0){$('mesMot').textContent='Inspire profondément…';$('mesCompte').textContent=r>5?'':r;$('mesSub').hidden=true;$('mesSmall').hidden=false}
     else{MES.etape='pret';$('mesBtn').classList.add('vu')}}
   if(MES.etape==='pret'){$('mesMot').textContent='Expire…';$('mesCompte').textContent='0 s';$('mesSub').hidden=false;$('mesSmall').hidden=true;
     $('mesSub').innerHTML="Pose ton doigt sur le bouton et expire le plus doucement possible.<br>Lève le doigt quand tu n'as plus d'air."}
