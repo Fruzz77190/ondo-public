@@ -52,6 +52,7 @@ svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
 #intro li b{display:block;font-weight:800;font-size:16px;margin-bottom:2px}
 #intro .lead{margin-top:10px;max-width:none}
 #intro .bouton{margin-top:auto}
+.carte.milieu{top:50%;bottom:auto;transform:translateY(-50%)}
 #toast{position:absolute;z-index:60;left:50%;top:45%;transform:translate(-50%,-50%);background:rgba(59,44,31,.9);color:#fff;font-weight:700;font-size:15px;padding:12px 18px;border-radius:14px;opacity:0;pointer-events:none;transition:opacity .3s;text-align:center}
 #toast.on{opacity:1}
 @media (max-height:700px){.titre{font-size:26px;line-height:31px}#s1{padding-top:calc(env(safe-area-inset-top) + 64px);gap:18px}.txt{font-size:16px;line-height:23px}.h2{font-size:24px;line-height:29px}}
@@ -78,12 +79,12 @@ svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
         <div class="h2" id="s2n"></div>
         <div class="chip" id="s2c"></div>
         <p class="txt" id="s2x"></p>
-        <p class="petit">Cette semaine : 3 min, puis 5 min, puis 10 min.</p>
+        <p class="petit" id="s2d"></p>
       </div>
     </section>
     <section class="slide" id="s3">
       <div class="bg" id="s3bg"></div>
-      <div class="carte">
+      <div class="carte milieu">
         <div class="kicker">Pourquoi ça marche</div>
         <div class="h2" id="s3t"></div>
         <p class="txt" id="s3x"></p>
@@ -97,9 +98,8 @@ svg.scene{position:absolute;inset:0;width:100%;height:100%;display:block}
     <p class="lead" style="text-align:left">Pendant 3 semaines, on t'accompagne vers <b id="introPrio"></b>.</p>
     <ul>
       <li><b>Une semaine, un lieu</b>Chaque semaine, un nouvel exercice, un peu plus approfondi que le précédent.</li>
-      <li><b>Une séance par jour</b>3 min les deux premiers jours, 5 min du 3e au 5e, 10 min les deux derniers.</li>
+      <li><b>Une séance par jour</b>Courte les premiers jours (3 min), puis 5 min, et 10 min le dernier jour de la semaine.</li>
       <li><b>Un bonus si tu en as envie</b>Une séance de 3 min en plus, choisie pour toi.</li>
-      <li><b>À ton rythme</b>Le voyage avance à chaque séance, pas avec le calendrier. Un jour sauté ? Ta séance t'attend.</li>
       <li><b>Chaque semaine terminée</b>te donne un badge et un récap de tes progrès.</li>
     </ul>
     <button class="bouton" id="introGo">C'est parti</button>
@@ -914,7 +914,7 @@ function scope(el){scene(el,'q','observatoire',8);const sh=el.querySelector('.mo
     star.setAttribute('opacity',(.45+.55*s.lvl).toFixed(2));put(X,y,null);setText(u,s.g.n,s.left,k)})}
 /* —— Prototype : slides de début de semaine (ajouté après le moteur des respirations) —— */
 const LIEUX_S={
- aube:{n:"La vallée de l'aube",tech:'Respiration abdominale',r:'4 · 6',kind:'p',id:'aube',seed:7,yc:520,anim:el=>crest(el,{kind:'p',id:'aube',seed:7,S:std(4,0,6,0),label:'',breathe:true}),
+ aube:{n:"La vallée de l'aube",tech:'Respiration abdominale',r:'4 · 6',kind:'p',id:'aube',seed:7,yc:470,anim:el=>crest(el,{kind:'p',id:'aube',seed:7,S:std(4,0,6,0),label:'',breathe:true}),
   ex:"Tu respires par le ventre, lentement, au rythme du soleil.",
   b:[["L'expiration qui apaise","Pendant l'expiration, ton rythme cardiaque ralentit. Expirer plus longtemps qu'on inspire permet à ton système nerveux de se calmer."]]},
  brume:{n:'La forêt de brume',tech:'Cohérence cardiaque',r:'5 · 5',kind:'q',id:'brume',seed:3,yc:420,anim:el=>pendulum(el,{kind:'q',id:'brume',seed:3,S:std(5,0,5,0),label:''}),
@@ -923,30 +923,27 @@ const LIEUX_S={
  cimes:{n:'Le lac des cimes',tech:'Respiration complète',r:'6 · 8',kind:'p',id:'ml',seed:8,yc:500,anim:el=>ripples(el,{S:std(6,0,8,0),label:''}),
   ex:"Tu remplis le ventre, puis le plexus, puis la poitrine.",
   b:[["Tes poumons ont de la réserve","Au repos, tu échanges environ un demi-litre d'air à chaque souffle, alors que tes poumons peuvent en contenir près de 6. Remplir le ventre, puis le plexus et la poitrine, augmente ta capacité respiratoire et détend ton diaphragme."]]},
- lucioles:{n:'La baie des lucioles',tech:'Expiration très longue',r:'4 · 8',kind:'q',id:'lucioles',seed:4,yc:420,anim:el=>pendulum(el,{kind:'q',id:'lucioles',seed:4,S:std(4,0,8,0),label:'',flies:true}),
+ lucioles:{n:'La baie des lucioles',tech:'Expiration très longue',r:'4 · 8',kind:'q',id:'lucioles',seed:4,yc:400,anim:el=>pendulum(el,{kind:'q',id:'lucioles',seed:4,S:std(4,0,8,0),label:'',flies:true}),
   ex:"Une inspiration douce, puis une expiration très longue.",
   b:[["Une expiration deux fois plus longue","Une longue expiration active le système nerveux « de repos » et favorise l'endormissement."]]},
  lune:{n:'Le lac de lune',tech:'Respiration 4-5-6',r:'4 · 5 · 6',kind:'p',id:'lac',seed:4,yc:300,anim:el=>orbit(el,{kind:'p',id:'lac',seed:4,cx:273,cy:203,r:78,top:250,label:'',pills:['','',''],cur:n=>({S:std(4,5,6,0),extra:n})}),
   ex:"Inspire, retiens ton souffle, puis expire lentement par la bouche.",
-  b:[["Ton corps passe en mode nuit","Retenir doucement ton souffle, puis expirer longuement, ralentit ton cœur, comme il le fait naturellement au moment de t'endormir."],
-     ["Une méthode connue pour s'endormir","Ce rythme s'inspire de la respiration 4-7-8 du médecin américain Andrew Weil, l'une des techniques les plus partagées pour trouver le sommeil."],
-     ["Moins de pensées au coucher","Compter 4, 5 puis 6 occupe ton esprit juste assez pour qu'il lâche les pensées qui tournent et laisse venir le sommeil."]]},
+  b:[["Moins de pensées au coucher","Compter 4, 5 puis 6 occupe ton esprit juste assez pour qu'il lâche les pensées qui tournent et laisse venir le sommeil."]]},
  observatoire:{n:"L'observatoire",tech:"Expiration qui s'allonge",r:'4 · 6 → 10',kind:'q',id:'observatoire',seed:8,yc:495,anim:el=>scope(el),
   ex:"Ton expiration s'allonge peu à peu, palier après palier.",
   b:[["Imiter l'endormissement","En t'endormant, ta respiration ralentit d'elle-même. Les paliers reproduisent cette descente progressive."]]},
  pins:{n:'Le col des pins',tech:'Respiration carrée',r:'4 · 4 · 4 · 4',kind:'p',id:'pins',seed:3,yc:370,anim:el=>{square(el,{kind:'p',id:'pins',seed:3,S:std(4,4,4,4),label:''});drift(el,6)},
   ex:"Quatre temps égaux : inspire, retiens, expire, retiens.",
-  b:[["La technique des forces spéciales","La respiration 4 · 4 · 4 · 4 est enseignée aux Navy SEALs, les forces spéciales américaines, pour garder la tête froide et rester concentré sous pression."],
-     ["Un point d'ancrage pour ton attention","Compter quatre temps égaux donne à ton esprit une tâche simple et précise : il s'éparpille moins et revient plus vite à ce que tu fais."],
-     ["Respirer pour mieux se concentrer","Dans une étude publiée en 2017, des adultes qui ont pratiqué une respiration lente pendant 8 semaines sont restés concentrés plus longtemps."]]},
+  b:[["Respirer pour mieux se concentrer","Dans une étude publiée en 2017, des adultes qui ont pratiqué une respiration lente pendant 8 semaines sont restés concentrés plus longtemps."]]},
  temple:{n:'Le temple de la montagne',tech:'Respiration rythmée',r:'4 · 3 · 6',kind:'q',id:'tmpH',seed:10,yc:425,anim:el=>torii(el,{S:std(4,3,6,0),label:''}),
   ex:"Inspire, retiens un instant, puis expire plus longuement.",
   b:[["Se recentrer avant une tâche","Quelques minutes de cette respiration avant de travailler favorisent l'attention."]]},
  bambous:{n:'La forêt de bambous',tech:'Carrée longue',r:'5 · 5 · 5 · 5',kind:'q',id:'bambous',seed:9,yc:370,anim:el=>square(el,{kind:'q',id:'bambous',seed:9,S:std(5,5,5,5),label:'',clear:true}),
   ex:"La respiration carrée, avec des temps plus longs.",
-  b:[["Une attention qui dure","Chaque temps de 5 s demande de rester présent jusqu'au bout : cycle après cycle, tu entraînes ton esprit à rester concentré plus longtemps."],
-     ["Le calme pour bien travailler","À 3 respirations par minute, ton corps se pose et ton esprit reste clair : l'état idéal pour une tâche qui demande de la concentration."]]},
- dunes:{n:'Les dunes du matin',tech:'Respiration tonique',r:'3 · 3',kind:'p',id:'dunes',seed:5,yc:520,anim:el=>crest(el,{kind:'p',id:'dunes',seed:5,S:std(3,0,3,0),label:'',pxs:32,breathe:true}),
+  b:[["Une pratique millénaire","Respirer en temps égaux vient du yoga, où on l'appelle « sama vritti », la respiration égale. Elle y sert depuis des siècles à préparer l'esprit à la concentration."],
+     ["Une attention qui se muscle","Tenir chaque temps de 5 s jusqu'au bout entraîne ton attention comme un muscle : séance après séance, elle reste fixée plus longtemps sur ce que tu fais."],
+     ["Garder son calme quand l'effort dure","Avec des temps plus longs, ton corps apprend à rester calme même quand l'effort se prolonge : un vrai atout pour les tâches longues et exigeantes."]]},
+ dunes:{n:'Les dunes du matin',tech:'Respiration tonique',r:'3 · 3',kind:'p',id:'dunes',seed:5,yc:470,anim:el=>crest(el,{kind:'p',id:'dunes',seed:5,S:std(3,0,3,0),label:'',pxs:32,breathe:true}),
   ex:"Des inspirations amples par le nez, sur un rythme vif.",
   b:[["L'inspiration éveille","Une respiration active stimule ton corps en douceur."]]},
  ble:{n:'Les champs de blé',tech:'Inspiration en paliers',r:'2 × 1 · 4',kind:'q',id:'champs',seed:10,yc:500,anim:el=>{wheat2(el);mill(el);drift(el,6)},
@@ -955,16 +952,15 @@ const LIEUX_S={
  chutes:{n:'Les chutes du soleil',tech:'Breathwork',r:'Souffles + apnée',kind:'q',id:'cascC',seed:6,yc:478,anim:el=>breathwork(el,'cascC'),
   ex:"De grands souffles, une apnée, puis les poumons pleins.",
   b:[["Coup de boost","Cette méthode provoque une libération d'adrénaline et augmente temporairement ta vigilance et ton énergie."]]},
- lavande:{n:'Le champ de lavande',tech:'Expiration longue',r:'4 · 8',kind:'q',id:'lavande',seed:7,yc:520,anim:el=>crest(el,{kind:'q',id:'lavande',seed:7,S:std(4,0,8,0),label:''}),
+ lavande:{n:'Le champ de lavande',tech:'Expiration longue',r:'4 · 8',kind:'q',id:'lavande',seed:7,yc:470,anim:el=>crest(el,{kind:'q',id:'lavande',seed:7,S:std(4,0,8,0),label:''}),
   ex:"Inspire par le nez, puis expire doucement et longuement par la bouche.",
-  b:[["Expirer pour se calmer","Une étude de Stanford (2023) a montré que 5 minutes par jour d'une respiration qui allonge l'expiration diminuent l'anxiété et améliorent l'humeur, plus encore que la méditation."]]},
+  b:[["Expirer pour se calmer","Une étude de Stanford a montré que 5 minutes par jour d'une respiration qui allonge l'expiration diminuent l'anxiété et améliorent l'humeur, plus encore que la méditation."]]},
  phare:{n:'Le phare du soir',tech:'Expiration prolongée',r:'4 · 3 · 6',kind:'p',id:'phare',seed:6,yc:400,anim:el=>beam(el,{S:std(4,3,6,0),label:''}),
   ex:"Inspire, retiens, puis expire longuement, comme la lumière du phare.",
   b:[["Accompagner la fin de journée","Le cortisol, l'hormone du stress, baisse naturellement le soir. Respirer lentement permet de le faire diminuer davantage."]]},
- cerisiers:{n:'Les cerisiers en fleur',tech:'Ton souffle',r:'À ton rythme',kind:'q',id:'cerisiers',seed:11,yc:520,anim:el=>crest(el,{kind:'q',id:'cerisiers',seed:11,S:std(4,0,6,0),label:''}),
+ cerisiers:{n:'Les cerisiers en fleur',tech:'Ton souffle',r:'À ton rythme',kind:'q',id:'cerisiers',seed:11,yc:470,anim:el=>crest(el,{kind:'q',id:'cerisiers',seed:11,S:std(4,0,6,0),label:''}),
   ex:"On mesure d'abord ton souffle, puis le rythme s'adapte à toi.",
-  b:[["Un effort qui en vaut la peine","Cet exercice peut sembler un peu inconfortable au début, mais c'est l'un des plus efficaces pour réduire ton stress et détendre ton diaphragme."],
-     ["Le plus efficace pour t'apaiser","Cet exercice peut sembler un peu inconfortable au début, mais c'est l'un des plus efficaces pour réduire ton stress et détendre ton diaphragme."]]},
+  b:[["Le plus efficace pour t'apaiser","Cet exercice peut sembler un peu inconfortable au début, mais c'est l'un des plus efficaces pour réduire ton stress et détendre ton diaphragme."]]},
 };
 const PRIOS={Stress:['Moins de stress',['lavande','phare','cerisiers']],Calme:['Plus de calme',['aube','brume','cimes']],Sommeil:['Mieux dormir',['lucioles','lune','observatoire']],Concentration:['Plus de concentration',['pins','temple','bambous']],'Énergie':["Plus d'énergie",['dunes','ble','chutes']]};
 const ENCOURAGE=[
@@ -1000,10 +996,11 @@ function construire(){
   $('#s1t').textContent=t1;$('#s1l').textContent=l1;
   const ph=$('#archeAnim');ph.innerHTML='';const yc=Math.max(260,Math.min(520,L.yc));
   ph.style.transform=`translate(-50%,0) scale(var(--k)) translateY(${-(yc-260)}px) translateX(${195-(L.xc||195)}px)`;
-  L.anim(ph);
+  L.anim(ph);const fige=units.splice(0);fige.forEach(u=>u(L.t||2600));
   // slides 2 et 3 : le lieu
   ['#s2bg','#s3bg'].forEach(q=>{$(q).innerHTML='';sceneSVG($(q),L)});
   $('#s2k').textContent=`Semaine ${etat.sem} sur 3 · ${nomPrio}`;
+  $('#s2d').textContent=id==='chutes'?'Cette semaine : 1 tour, puis 2, puis 3.':id==='ble'?'Cette semaine : 1 min, puis 3 min, puis 5 min.':'Cette semaine : 3 min, puis 5 min, puis 10 min.';
   $('#s2n').textContent=L.n;$('#s2c').textContent=`${L.tech} · ${L.r}`;$('#s2x').textContent=L.ex;
   $('#s3t').textContent=bt;$('#s3x').textContent=bx;
   $('#intro').style.display=etat.sem===1?'flex':'none';
