@@ -1025,13 +1025,13 @@ function cheminCerisiers(sv,W,H){const c=[...sv.querySelectorAll('path')].find(p
 /* —— le son —— */
 const SP='sons-phare-3d8b6e15/',SD='sons-dunes-e4f98bbe/',SC='sons-chutes-5b9e2d40/',SCe='sons-cerisiers-8e4c1b72/';
 let ctx=null,muet=false,maitre=null;const BUF={};
-const NIV={gong:.55,mer:.11,musique:.30,carillon:.45,cerisiers:.12}; // vagues -50 % (Julien) ; musique des cerisiers en fond, volume bas
+const NIV={gong:.55,mer:.176,musique:.30,carillon:.45,cerisiers:.12}; // vagues -50 % (Julien) ; musique des cerisiers en fond, volume bas
 let gongBus=null;
 function audio(){if(ctx)return ctx;try{ctx=new (window.AudioContext||window.webkitAudioContext)();maitre=ctx.createGain();maitre.gain.value=muet?0:1;maitre.connect(ctx.destination);gongBus=ctx.createGain();gongBus.connect(maitre);
   [['fa5',SD+'gong-fa5.m4a'],['do5',SD+'gong-do5.m4a'],['mib5',SP+'gong-mib5.m4a'],['sib4',SP+'gong-sib4.m4a'],['mer',SP+'mer.m4a'],['carillon',SC+'carillon.m4a']].forEach(([k,u])=>{BUF[k]=fetch(u).then(r=>r.arrayBuffer()).then(b=>new Promise((ok,ko)=>ctx.decodeAudioData(b,ok,ko))).catch(()=>null)})}catch(e){}return ctx}
 function gong(k,quand=0){if(!ctx)return;BUF[k].then(b=>{if(!b)return;const s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=b;g.gain.value=NIV.gong;s.connect(g).connect(gongBus);s.start(ctx.currentTime+quand)})}
 let MER=null;
-function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.setValueAtTime(0,ctx.currentTime);MER.g.gain.linearRampToValueAtTime(NIV.mer*.6,ctx.currentTime+1.2); // avant la respiration : -40 %MER.g.connect(maitre);
+function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.setValueAtTime(0,ctx.currentTime);MER.g.gain.linearRampToValueAtTime(NIV.mer*.625,ctx.currentTime+1.2); // avant la respiration : 50 % du volume de départ (.11), pendant : 80 % (.176)MER.g.connect(maitre);
   BUF.mer.then(b=>{if(!b||!MER)return;const s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.loopStart=Math.min(11.3,b.duration-1);s.loopEnd=Math.min(59.3,b.duration);s.connect(MER.g);s.start(0,Math.min(17.8,b.duration-1));MER.s=s})}
 const MUS=new Audio(SP+'musique.m4a');MUS.preload='auto';MUS.loop=false;let musG=null;
 function musiqueDemarre(){if(!ctx)return;try{if(!musG){const src=ctx.createMediaElementSource(MUS);musG=ctx.createGain();src.connect(musG).connect(maitre)}
