@@ -1107,7 +1107,7 @@ function merDemarre(){if(!ctx||MER)return;MER={g:ctx.createGain()};MER.g.gain.se
   BUF.mer.then(b=>{if(!b||!MER)return;const s=ctx.createBufferSource();s.buffer=b;s.loop=true;s.loopStart=Math.min(11.3,b.duration-1);s.loopEnd=Math.min(59.3,b.duration);s.connect(MER.g);s.start(0,Math.min(17.8,b.duration-1));MER.s=s})}
 const MUS=new Audio(SP+'musique.m4a');MUS.preload='auto';MUS.loop=false;let musG=null;
 function musiqueDemarre(){if(!ctx)return;try{if(!musG){const src=ctx.createMediaElementSource(MUS);musG=ctx.createGain();src.connect(musG).connect(maitre)}
-  musG.gain.cancelScheduledValues(ctx.currentTime);musG.gain.setValueAtTime(0,ctx.currentTime);musG.gain.linearRampToValueAtTime(NIV.musique,ctx.currentTime+3);MUS.currentTime=8;MUS.play().catch(()=>{})}catch(e){}}
+  musG.gain.cancelScheduledValues(ctx.currentTime);musG.gain.setValueAtTime(0,ctx.currentTime);musG.gain.linearRampToValueAtTime(NIV.musique,ctx.currentTime+10);MUS.currentTime=8;MUS.play().catch(()=>{})}catch(e){}}
 // pendant la respiration, les vagues reviennent à leur volume, en fondu
 function merPleine(){if(!ctx||!MER)return;const t=ctx.currentTime;MER.g.gain.cancelScheduledValues(t);MER.g.gain.setValueAtTime(MER.g.gain.value,t);MER.g.gain.linearRampToValueAtTime(NIV.mer,t+3)}
 function toutEffacer(sec){if(!ctx)return;const t=ctx.currentTime;[MER&&MER.g,musG].forEach(g=>{if(!g)return;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+sec)});
