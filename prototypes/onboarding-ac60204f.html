@@ -55,7 +55,7 @@ button{font-family:inherit;cursor:pointer}
 #e01 .titre{font-size:30px;line-height:36px;text-align:center;color:var(--prune)}
 #e01 .arche{width:min(300px,76vw)}
 #e01 .titre,#e01 .arche,#e01 .bouton{opacity:0}
-#e01.vu .titre{animation:fondu 1s ease-out .2s forwards}#e01.vu .arche{animation:fondu 1s ease-out .5s forwards}#e01.vu .bouton{animation:fondu .8s ease-out 1.5s forwards}
+#e01.vu .arche{animation:fondu 1s ease-out .2s forwards}#e01.vu .titre{animation:fondu 1s ease-out 1.1s forwards}#e01.vu .bouton{animation:fondu .8s ease-out 2s forwards}
 @keyframes fondu{to{opacity:1}}
 #e01.vu{animation:entree 1.2s ease-out}@keyframes entree{from{opacity:0}to{opacity:1}}
 #e09 .lead,#e10 .lead{text-align:center;margin-top:0}
@@ -1069,7 +1069,7 @@ const ENTREE={
   units.push(()=>{const q=(performance.now()-t0)/1000-1;let b=.2;if(q>=0&&q<2.2)b=.2+.8*k(q/2.2);else if(q>=2.2&&q<4.6)b=.2+.8*(1-k((q-2.2)/2.4));if(sc&&sc.breathe)sc.breathe(b)});
   minuteurs.push(setTimeout(()=>gong('fa5'),4200),setTimeout(()=>gong('do5'),7200),setTimeout(()=>aller('e01'),10200));},
  e01(){dessin($('#e01 .arche'),'p','ml2',5,300,400);const e=$('#e01');e.classList.remove('vu');void e.offsetWidth;e.classList.add('vu')},
- e02(){dessin($('#e02 .vignette'),'p','a2',5,150,180);carillon()},
+ e02(){dessin($('#e02 .vignette'),'p','a2',5,150,180);merDemarre()},
  e06(){dessin($('#e06 .carte .img'),'p','phareO',6,390,250);merDemarre()},
  e07(){gongsRetour();respiration()},
  e08(){toutEffacer(8);dessin($('#e08 .bandeau'),'p','phareO',6,390,150)},
