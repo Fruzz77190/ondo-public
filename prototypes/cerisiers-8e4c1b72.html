@@ -1129,6 +1129,11 @@ $('btnFermerMesure').addEventListener('click',e=>{e.stopPropagation();MES.etape=
 $('btnSeance').addEventListener('click',e=>{e.stopPropagation();reglerRythme(Math.max(4,MES.mesure));montrerEcran(null);try{demarrer()}catch(err){toast('Erreur au démarrage : '+err.message,10000)}});
 
 
+/* ---------- Les phrases de chaque minute juste sous le soleil (Julien, 22 nov.) ---------- */
+const DISQUE=[...$('scene').querySelectorAll('circle')].find(c=>c.getAttribute('fill')==='#f28c5b');
+function placerDoux(){const dz=$('doux');if(!DISQUE||!dz)return;const r=DISQUE.getBoundingClientRect(),st=$('stage').getBoundingClientRect();
+  Object.assign(dz.style,{position:'fixed',left:Math.round(st.left)+'px',width:Math.round(st.width)+'px',top:Math.round(r.bottom+14)+'px',padding:'0 28px',textAlign:'center',boxSizing:'border-box'})}
+
 /* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
 // Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
 const VOL_COUL='#b4583a';
@@ -1174,12 +1179,13 @@ function vol(el){
   if(g)poserOiseau(volPaths[2],el,g,2,3);else volPaths[2].setAttribute('opacity','0')}
 
 // les cerisiers (Julien, 22 nov.) : un ou deux oiseaux traversent le ciel à 50 s, puis toutes les minutes (devant le soleil, sous les textes)
-prevoirVols=function(){const v=[];for(let n=0;n<12;n++)v.push({t:50+60*n,dur:19+Math.random()*4,dir:n%2?-1:1,y:330+Math.random()*60,s:1.05+Math.random()*.3,deux:n%2===0,ph:Math.random()*6.28});return v};
+// (Julien, 22 nov.) en alternance : au-dessus du mot Inspire / Expire, puis sous les phrases de chaque minute
+prevoirVols=function(){const v=[];for(let n=0;n<12;n++)v.push({t:50+60*n,dur:19+Math.random()*4,dir:n%2?-1:1,y:n%2?414+Math.random()*10:106+Math.random()*8,s:1.05+Math.random()*.3,deux:n%2===0,ph:Math.random()*6.28});return v};
 prevoirVolsNuages=function(){return[]};
 
 function frame(){
   requestAnimationFrame(frame);
-  animerAbeilles();animerMesure();
+  animerAbeilles();animerMesure();placerDoux();
   if(!sess)return;
   const el=now()-sess.t0;
   const word=$('word'),count=$('count'),guide=$('guide');
