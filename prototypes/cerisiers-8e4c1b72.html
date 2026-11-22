@@ -141,6 +141,7 @@ button{font-family:inherit;color:inherit}
 <div class="stage" id="stage">
   <svg id="scene" class="layer" aria-hidden="true"></svg>
   <svg id="fx" class="layer" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g id="volG"></g>
     <g id="creteG">
       <rect x="16" y="440" width="358" height="200" rx="30" fill="rgba(59,44,31,.2)"/>
       <path id="avenir" fill="none" stroke="#fff9f3" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
@@ -760,13 +761,13 @@ $('segDuree').addEventListener('click',e=>{const b=e.target.closest('button');if
 /* ---------- Paysages (scène du kit, identique à l'app) ---------- */
 try{qPlace($('scene'),'cerisiers',{w:390,h:844,seed:11});qPlace($('sceneFiche'),'cerisiers',{w:390,h:270,seed:11});qPlace($('sceneApres'),'cerisiers',{w:390,h:190,seed:11});qPlace($('sceneSouffle'),'cerisiers',{w:390,h:190,seed:11});qPlace($('sceneRythme'),'cerisiers',{w:390,h:190,seed:11})}catch(e){toast('Paysage : '+e.message,8000)}
 
-/* ---------- Le rythme : inspire 4 s, expire = la mesure (au moins 4 s), puis 1 s de battement avant l'inspire (Julien, 22 nov.) ---------- */
+/* ---------- Le rythme : inspire 4 s, 1 s de battement, expire = la mesure (au moins 4 s), 1 s de battement (Julien, 22 nov.) ---------- */
 const ease=x=>(1-Math.cos(Math.PI*x))/2;
 const clamp=x=>Math.max(0,Math.min(1,x));
-const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Expire',d:8,a:1,b:0,pill:1},{n:'Pause',d:1,a:0,b:0,pill:1}];
+const S=[{n:'Inspire',d:4,a:0,b:1,pill:0},{n:'Pause',d:1,a:1,b:1,pill:0},{n:'Expire',d:8,a:1,b:0,pill:1},{n:'Pause',d:1,a:0,b:0,pill:1}];
 let T=0,FIN_EXPIRE=0;
 // le rythme est réglé sur la mesure (écran Ton rythme) ; la séance se termine juste après une expiration (règle de Julien, 19 nov.)
-function reglerRythme(E){S[1].d=E;T=S.reduce((s,g)=>s+g.d,0);FIN_EXPIRE=S[0].d+S[1].d;const p=document.getElementById('ph1');if(p)p.textContent='Expire '+E}
+function reglerRythme(E){S[2].d=E;T=S.reduce((s,g)=>s+g.d,0);FIN_EXPIRE=S[0].d+S[1].d+S[2].d;const p=document.getElementById('ph1');if(p)p.textContent='Expire '+E}
 reglerRythme(8);
 const MOTS=['Inspire','Expire'];
 const GUIDE=['Inspire…','Expire…'];
@@ -822,7 +823,7 @@ const NIV={musique:.239*1.2,gong:.906,oiseaux:.12,abeille:.025*1.1};   // abeill
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Les cerisiers (Julien, 22 nov.) : les oiseaux dès l'écran « Nous allons mesurer ton souffle » ; la musique à la 1re inspiration
 // (on la prend à 8,5 s : son début est presque muet) ; le vent au 2e cycle ; une abeille juste après les oiseaux puis toutes les 45 s ;
-// les oiseaux de nouveau 50 s avant la fin, en entier ; pas de gong ni de notes à la fin.
+// les oiseaux à 2:20, 4:20, 6:20, 8:20 (5 et 10 min) et 50 s avant la fin, en entier ; pas de gong ni de notes à la fin.
 const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=4,MUS_OFF=8.5;
 const LONGS=['musique'];
 // Diagnostic (version test « ?debug ») : ce que fait le gong, affiché en bas de l'écran
@@ -947,6 +948,10 @@ function tick(){
   if(!sess.son||!G||!ctx)return;
   const n=ctx.currentTime,H=n+3,stop=sess.end+12;
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
+  // séances de 5 et 10 min : des oiseaux aussi à 2:20, 4:20, 6:20 et 8:20 (extraits de 20 s), sauf s'ils chevauchent ceux de la fin (Julien, 22 nov.)
+  // (la 1re abeille se cale sur la fin des oiseaux du début, avant d'ajouter les passages suivants)
+  if(sess.abeille==null){const fin=Math.max(0,...OIS_PLAGES.map(p=>p[1]));sess.abeille=Math.max(sess.t0+5,fin+2)}
+  if(!sess.oisPassages){sess.oisPassages=true;if(duree>=5)[140,260,380,500].forEach((d,i)=>{if(d+20<=sess.total-50)jouerOiseaux(sess.t0+d,20,[0,20,36,10][i])})}
   // les abeilles (Julien, 22 nov.) : la première juste après les oiseaux du début, puis toutes les 45 s ; jamais pendant les oiseaux
   if(sess.abeille==null){const fin=Math.max(0,...OIS_PLAGES.map(p=>p[1]));sess.abeille=Math.max(sess.t0+5,fin+2)}
   while(sess.abeille<H&&sess.abeille<sess.end-6.5){const w=sess.abeille;if(!oiseauxEntre(w,w+7)&&!(sess.total>50&&w+7>sess.t0+sess.total-50))abeille(w);sess.abeille+=45}
@@ -1124,6 +1129,54 @@ $('btnFermerMesure').addEventListener('click',e=>{e.stopPropagation();MES.etape=
 $('btnSeance').addEventListener('click',e=>{e.stopPropagation();reglerRythme(Math.max(4,MES.mesure));montrerEcran(null);try{demarrer()}catch(err){toast('Erreur au démarrage : '+err.message,10000)}});
 
 
+/* ---------- Un ou deux oiseaux qui traversent le ciel de temps en temps (Julien, 18 nov. : simple, beau et fluide) ---------- */
+// Même dessin et même couleur que les oiseaux du paysage ; ils battent des ailes puis planent, en ondulant doucement.
+const VOL_COUL='#b4583a';
+const volPaths=[0,1,2].map(()=>{const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('fill','none');p.setAttribute('stroke',VOL_COUL);p.setAttribute('stroke-width','1.5');p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');p.setAttribute('opacity','0');
+  $('volG').appendChild(p);return p});
+// Devant le soleil : un passage environ toutes les 30 à 45 s (le premier vers 12 s), parfois à deux ; chaque traversée dure 18 à 24 s.
+// Ils volent entre les textes et l'encadré de la courbe, pour ne jamais passer derrière un mot.
+function prevoirVols(){const v=[];let t=10+Math.random()*5;
+  while(t<720){const dur=18+Math.random()*6;
+    v.push({t,dur,dir:Math.random()<.5?1:-1,y:318+Math.random()*82,s:1.05+Math.random()*.35,deux:Math.random()<.45,ph:Math.random()*6.28});
+    t+=dur+12+Math.random()*15}
+  return v}
+// Entre les nuages (Julien, 18 nov.) : de temps en temps, un oiseau seul de gauche à droite, entre le nuage le plus bas
+// et les deux plus hauts (hauteur calculée sur les nuages du paysage). Le premier vers 35 s, puis toutes les 50 à 80 s.
+function hauteurEntreNuages(){const ys=[...$('scene').querySelectorAll('.pfclouds rect')].map(r=>+r.getAttribute('y'));
+  if(ys.length<6)return 254;
+  const nuages=[0,2,4].map(i=>[Math.min(ys[i],ys[i+1]),Math.max(ys[i],ys[i+1])+9]).sort((a,b)=>a[0]-b[0]);
+  return (nuages[1][1]+nuages[2][0])/2}
+function prevoirVolsNuages(){const v=[],y=hauteurEntreNuages();let t=32+Math.random()*8;
+  while(t<720){const dur=19+Math.random()*4;v.push({t,dur,dir:1,y,s:.95+Math.random()*.15,deux:false,ph:Math.random()*6.28});t+=dur+30+Math.random()*30}
+  return v}
+// Un oiseau : deux ailes en courbe ; k = position des ailes (0 = levées, 1 = baissées).
+function dessinOiseau(k){const bout=-5.2+7.4*k,ctl=-4.2+5.2*k;
+  return `M-9,${bout.toFixed(2)} Q-4.6,${ctl.toFixed(2)} 0,0 Q4.6,${ctl.toFixed(2)} 9,${bout.toFixed(2)}`}
+function poserOiseau(p,el,f,i,houle){
+  const lag=i===1?0.9:0,q=(el-f.t-lag)/f.dur;
+  if(q<0||q>1){p.setAttribute('opacity','0');return}
+  const x0=f.dir>0?-30:420,x=x0+f.dir*450*q-(i===1?f.dir*20:0);
+  const y=f.y+(i===1?11:0)+Math.sin(q*Math.PI*1.4+f.ph)*houle-q*(houle>4?12:3);
+  // battements d'ailes (2,3 par seconde) qui s'adoucissent régulièrement en vol plané
+  const tt=el-lag+(i===1?.37:0),plane=.3+.7*(.5+.5*Math.cos(2*Math.PI*tt/3.4+f.ph));
+  const k=.5+.5*Math.sin(2*Math.PI*2.3*tt)*plane;
+  p.setAttribute('d',dessinOiseau(k));
+  p.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(f.s*(i===1?.85:1)).toFixed(2)})`);
+  p.setAttribute('opacity',(Math.min(1,q*9,(1-q)*9)*.72).toFixed(2))}
+function vol(el){
+  if(el<0||reduit||!sess){volPaths.forEach(p=>p.setAttribute('opacity','0'));return}
+  if(!sess.vols){sess.vols=prevoirVols();sess.volsNuages=prevoirVolsNuages()}
+  const f=sess.vols.find(v=>el>=v.t&&el<v.t+v.dur+1.2);
+  [0,1].forEach(i=>{const p=volPaths[i];if(!f||(i===1&&!f.deux))p.setAttribute('opacity','0');else poserOiseau(p,el,f,i,7)});
+  const g=sess.volsNuages.find(v=>el>=v.t&&el<v.t+v.dur);
+  if(g)poserOiseau(volPaths[2],el,g,2,3);else volPaths[2].setAttribute('opacity','0')}
+
+// les cerisiers (Julien, 22 nov.) : un ou deux oiseaux traversent le ciel à 50 s, puis toutes les minutes (devant le soleil, sous les textes)
+prevoirVols=function(){const v=[];for(let n=0;n<12;n++)v.push({t:50+60*n,dur:19+Math.random()*4,dir:n%2?-1:1,y:330+Math.random()*60,s:1.05+Math.random()*.3,deux:n%2===0,ph:Math.random()*6.28});return v};
+prevoirVolsNuages=function(){return[]};
+
 function frame(){
   requestAnimationFrame(frame);
   animerAbeilles();animerMesure();
@@ -1144,11 +1197,11 @@ function frame(){
     if(guide.textContent!==GUIDE[s.g.pill])guide.textContent=GUIDE[s.g.pill];
     const m=MESSAGES.findIndex(x=>el>=x.de&&el<x.a&&x.de<sess.total-10);if(m!==sess.msg){sess.msg=m;montrerMessage(m)}
     if(sess.lastPill!==s.g.pill){sess.lastPill=s.g.pill;$('ph0').classList.toggle('on',s.g.pill===0);$('ph1').classList.toggle('on',s.g.pill===1)}
-    dessinerCrete(Math.max(0,el-.001));
+    dessinerCrete(Math.max(0,el-.001));vol(el);
   }else if(!sess.fin){
     // fin (Julien, 18 nov.) : l'encadré de la courbe et les textes s'effacent en 2 s, la musique s'éteint en 5 s, puis l'écran de fin
     sess.fin=true;FIN_ELEMENTS.forEach(id=>{const x=$(id);x.style.transition='opacity 2s ease';x.style.opacity=0});
-    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);
+    $('creteG').style.transition='opacity 2s ease';$('creteG').style.opacity=0;$('pap').setAttribute('opacity',0);vol(-1);
     ecrireDoux(MESSAGE_FIN,true);
   }else if(!sess.ecranFin&&el>=sess.total+FIN_ECRAN){
     sess.ecranFin=true;FIN_ELEMENTS.concat('phaseBox').forEach(id=>{$(id).hidden=true});
