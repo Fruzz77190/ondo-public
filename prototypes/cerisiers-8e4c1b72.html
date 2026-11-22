@@ -820,7 +820,7 @@ const NIV={musique:.239,gong:.906,oiseaux:.12,abeille:.05};   // cigales encore 
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
-// Les cerisiers (Julien, 22 nov.) : les oiseaux dès l'écran « Nous allons mesurer ton souffle » ; la musique à la 1re inspiration
+// Les cerisiers (Julien, 22 nov.) : les oiseaux à 30 s (20 s) ; la musique à la 1re inspiration
 // (on la prend à 8,5 s : son début est presque muet) ; le vent au 2e cycle ; une abeille au 4e cycle puis tous les 4 cycles ;
 // les oiseaux de nouveau 50 s avant la fin, en entier ; pas de gong ni de notes à la fin.
 const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=4,MUS_OFF=8.5;
@@ -949,7 +949,10 @@ function tick(){
   if(!sess.son||!G||!ctx)return;
   const n=ctx.currentTime,H=n+3,stop=sess.end+12;
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
-  // les oiseaux, 50 s avant la fin, en entier (ils continuent sur l'écran suivant)
+  // les oiseaux au début seulement (Julien, 22 nov.) : un extrait de 20 s à 30 s (pas s'il chevauche ceux de la fin)
+  if(sess.oisN==null)sess.oisN=0;
+  while(sess.oisN<1&&sess.t0+30+60*sess.oisN<H){const w=sess.t0+30+60*sess.oisN;if(w+20<=sess.t0+sess.total-50)jouerOiseaux(w,20,[0,20,36][sess.oisN%3]);sess.oisN++}
+  // et 50 s avant la fin, en entier (ils continuent sur l'écran suivant)
   if(!sess.oisFin&&sess.total>50&&n>=sess.t0+sess.total-53){sess.oisFin=true;jouerOiseaux(sess.t0+sess.total-50)}
   // la musique repart de son début au moment où elle entre (3e cycle)
   if(AVEC_MUSIQUE&&!sess.musDep&&n>=sess.t0+MUS_DE-.3){sess.musDep=true;try{MEDIA.musique.el.currentTime=MUS_OFF}catch(e){}}
@@ -1028,14 +1031,22 @@ const MESSAGE_FIN="Merci d'avoir pris ce moment pour toi.";
 
 // Pas de petits pétales blancs immobiles dans le décor (Julien, 22 nov.)
 ['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(e)e.querySelectorAll('ellipse[rx="2.2"][ry="1.3"]').forEach(x=>x.remove())});
+// Le chemin sur le modèle des dunes du matin (Julien, 22 nov.) : il part du bas à gauche, serpente et s'affine jusqu'à l'horizon
+// (même tracé que scenes.js, chemin des dunes), à la place du chemin droit.
+['scene','sceneFiche','sceneApres','sceneSouffle','sceneRythme'].forEach(id=>{const e=$(id);if(!e)return;const c=[...e.querySelectorAll('path')].find(p=>p.getAttribute('fill')==='#fbe4dc');if(!c)return;
+  const vb=(e.getAttribute('viewBox')||'0 0 390 844').split(/[ ,]+/).map(Number),W=vb[2],H=vb[3],px=W*.52,nb=H*.86,top=H*.68;
+  c.setAttribute('d',`M${px-46},${H} C${px-10},${H-40} ${px+70},${nb-10} ${W*.6},${top} C${px+60},${nb-6} ${px+10},${H-36} ${px+30},${H} Z`);c.setAttribute('opacity',.9)});
 
-/* Les oiseaux (Julien, 22 nov.) : discrets, dès l'écran « Nous allons mesurer ton souffle », joués en entier (58 s) ;
-   puis de nouveau 50 s avant la fin de la séance, en entier, jusque sur l'écran suivant. Joués en mémoire. */
+/* Les oiseaux (Julien, 22 nov.) : discrets, seulement au début et à la fin : 30 s après le début de l'exercice, un extrait de 20 s ;
+   et 50 s avant la fin de la séance, le fichier en entier, jusque sur l'écran suivant. Joués en mémoire. */
 const oisCharge=fetch(SONS+'oiseaux.m4a').then(r=>{if(!r.ok)throw new Error('oiseaux : '+r.status);return r.arrayBuffer()});
 let OIS_BUF=null,OIS=null;const OIS_PLAGES=[];
 function sortieOiseaux(){if(OIS)return OIS;const m=ctx.createGain();m.gain.value=muet?0:1;m.connect(ctx.destination);OIS={mute:m,srcs:[]};return OIS}
-function jouerOiseaux(w){const go=()=>{if(!OIS_BUF||!ctx)return;const o=sortieOiseaux(),s=ctx.createBufferSource();s.buffer=OIS_BUF;
-    const g=ctx.createGain();g.gain.value=NIV.oiseaux*VOL.sons*lireVolumes().sons;s.connect(g).connect(o.mute);const t=Math.max(w,ctx.currentTime);s.start(t);o.srcs.push(s);OIS_PLAGES.push([t,t+OIS_BUF.duration])};
+// jouerOiseaux(w) : le fichier en entier ; jouerOiseaux(w,20,debut) : un extrait de 20 s, en fondu (Julien, 22 nov.)
+function jouerOiseaux(w,duree,debut){const go=()=>{if(!OIS_BUF||!ctx)return;const o=sortieOiseaux(),s=ctx.createBufferSource();s.buffer=OIS_BUF;
+    const g=ctx.createGain(),L=NIV.oiseaux*VOL.sons*lireVolumes().sons,t=Math.max(w,ctx.currentTime),d=duree||OIS_BUF.duration,off=debut||0;
+    if(duree){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(L,t+1.5);g.gain.setValueAtTime(L,t+d-2.5);g.gain.linearRampToValueAtTime(0,t+d)}else g.gain.value=L;
+    s.connect(g).connect(o.mute);s.start(t,off,d);o.srcs.push(s);OIS_PLAGES.push([t,t+d])};
   if(OIS_BUF)go();else oisCharge.then(b=>new Promise(ok=>ctx.decodeAudioData(b.slice(0),d=>{OIS_BUF=d;ok()},()=>ok()))).then(go)}
 function arreterOiseaux(){if(!OIS)return;const t=ctx.currentTime;OIS.mute.gain.setTargetAtTime(0,t,.15);const o=OIS;OIS=null;OIS_PLAGES.length=0;
   setTimeout(()=>{o.srcs.forEach(s=>{try{s.stop()}catch(e){}});try{o.mute.disconnect()}catch(e){}},600)}
@@ -1090,7 +1101,8 @@ function reveillerSon(){try{try{if(navigator.audioSession)navigator.audioSession
   if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;ctx=new AC()}const r=ctx.resume&&ctx.resume();if(r&&r.catch)r.catch(()=>{});
   const b=ctx.createBuffer(1,1,22050),s0=ctx.createBufferSource();s0.buffer=b;s0.connect(ctx.destination);s0.start(0)}catch(e){}}
 let MES={etape:'',debut:0,pose:0,mesure:8};
-function ouvrirSouffle(){$('fiche').hidden=true;reveillerSon();montrerEcran('ecranSouffle');if(ctx&&!OIS)jouerOiseaux(ctx.currentTime+.1)}
+function ouvrirSouffle(){$('fiche').hidden=true;reveillerSon();montrerEcran('ecranSouffle');
+  oisCharge.then(b=>{if(!OIS_BUF&&ctx)ctx.decodeAudioData(b.slice(0),d=>{OIS_BUF=d},()=>{})})}   // plus d'oiseaux pendant la mesure
 function ouvrirMesure(){montrerEcran('ecranMesure');MES.etape='inspire';MES.debut=performance.now();$('mesBtn').classList.remove('vu','pose');$('mesJauge').style.transition='none';$('mesJauge').style.height='0%'}
 function finirMesure(){const s=(performance.now()-MES.pose)/1000;if(s<1){MES.etape='pret';$('mesBtn').classList.remove('pose');$('mesJauge').style.transition='height .3s';$('mesJauge').style.height='0%';return}
   MES.etape='fini';MES.mesure=Math.round(s);const E=Math.max(4,MES.mesure);
