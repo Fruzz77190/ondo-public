@@ -1063,11 +1063,14 @@ const ABEILLES=(function(){const sc=$('scene'),NS='http://www.w3.org/2000/svg',g
   const fleur=i=>{const a=arbres[i],t=rnd()*6.28,d=rnd()*a.r;return{x:a.x+Math.cos(t)*d,y:a.y+Math.sin(t)*d*.7,arbre:i}};
   const mkA=(p,n,o)=>{const e=document.createElementNS(NS,n);for(const k in o)e.setAttribute(k,o[k]);p.appendChild(e);return e};
   return [0,1,2].map(k=>{const b=mkA(g,'g',{});const ailes=mkA(b,'g',{});
-    mkA(ailes,'ellipse',{cx:-1.2,cy:-2.6,rx:2.2,ry:3.2,fill:'#ffffff',opacity:.75,transform:'rotate(-25 -1.2 -2.6)'});mkA(ailes,'ellipse',{cx:1.4,cy:-2.4,rx:2,ry:2.9,fill:'#ffffff',opacity:.65,transform:'rotate(25 1.4 -2.4)'});
-    mkA(b,'ellipse',{cx:0,cy:0,rx:3.8,ry:2.6,fill:'#f2b632'});mkA(b,'path',{d:'M-1,-2.4 v4.8 M1.4,-2.2 v4.4',stroke:'#4a3220','stroke-width':1});mkA(b,'circle',{cx:3.9,cy:-.4,r:1.5,fill:'#4a3220'});
+    // plus petites et plus épurées (Julien, 22 nov.) : un petit corps doré et deux ailes claires, sans rayures ni tête
+    mkA(ailes,'ellipse',{cx:-.6,cy:-1.7,rx:1.3,ry:1.9,fill:'#ffffff',opacity:.8,transform:'rotate(-20 -.6 -1.7)'});mkA(ailes,'ellipse',{cx:.8,cy:-1.6,rx:1.2,ry:1.7,fill:'#ffffff',opacity:.7,transform:'rotate(20 .8 -1.6)'});
+    mkA(b,'ellipse',{cx:0,cy:0,rx:2.3,ry:1.5,fill:'#d99a2b'});
     const de=fleur(k%3),A={b,ailes,de,vers:de,t0:-rnd()*3,duree:0,pose:1.5+rnd()*2,sens:1};return A})})();
 const ARBRES_N=5;
-function animerAbeilles(){const t=performance.now()/1000;let r=Math.floor(t*1000)%997+3;
+function animerAbeilles(){const t=performance.now()/1000;
+  // pas d'abeilles pendant la mesure du souffle (Julien, 22 nov.)
+  const g=ABEILLES[0].b.parentNode,cache=!$('ecranMesure').hidden;g.setAttribute('opacity',cache?0:1);if(cache)return;
   ABEILLES.forEach((A,k)=>{let u=t-A.t0;
     if(u>A.pose+A.duree){A.de=A.vers;let i;do{i=Math.floor(Math.random()*ARBRES_N)}while(i===A.de.arbre);
       const a=[[.12,.64,.7],[.3,.62,.65],[.86,.63,.7],[.18,.94,1.25],[.78,.95,1.3]][i],cx=390*a[0],cy=844*a[1]-32*a[2],rr=20*a[2],th=Math.random()*6.28,dd=Math.random()*rr;
@@ -1078,7 +1081,7 @@ function animerAbeilles(){const t=performance.now()/1000;let r=Math.floor(t*1000
     else{const q=(u-A.pose)/A.duree,e=q*q*(3-2*q),mx=(A.de.x+A.vers.x)/2,my=Math.min(A.de.y,A.vers.y)-40-20*k;
       x=(1-e)*(1-e)*A.de.x+2*(1-e)*e*mx+e*e*A.vers.x+Math.sin(t*5+k)*1.5;y=(1-e)*(1-e)*A.de.y+2*(1-e)*e*my+e*e*A.vers.y+Math.sin(t*7+k)*1.2;
       A.sens=A.vers.x>=A.de.x?1:-1}
-    A.b.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(1.25*A.sens).toFixed(2)} 1.25)`);
+    A.b.setAttribute('transform',`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(.9*A.sens).toFixed(2)} .9)`);
     A.ailes.setAttribute('transform',`scale(1 ${(.35+.65*Math.abs(Math.sin(t*38+k))).toFixed(2)})`)})}
 
 /* ---------- Les écrans avant la séance ---------- */
