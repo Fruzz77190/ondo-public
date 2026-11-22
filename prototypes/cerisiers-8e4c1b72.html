@@ -816,7 +816,7 @@ function lireVolumes(){try{const v=JSON.parse(localStorage.getItem('ondo-proto-v
 // Les sons choisis par Julien (18 nov. 2026). Chaque son est ramené au même volume perçu (-28 LUFS) : aucun ne domine.
 const SONS='sons-cerisiers-8e4c1b72/';
 // Mêmes niveaux que les autres lieux ; les oiseaux discrets (Julien) ; l'abeille de synthèse.
-const NIV={musique:.239,gong:.906,oiseaux:.12,abeille:.025};   // abeille -50 % (Julien, 22 nov.)   // cigales encore -50 % (Julien, 18 nov.)
+const NIV={musique:.239*1.2,gong:.906,oiseaux:.12,abeille:.025};   // abeille -50 % (Julien, 22 nov.)   // cigales encore -50 % (Julien, 18 nov.)
 //   // cigales -20 % (Julien, 18 nov.)
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
