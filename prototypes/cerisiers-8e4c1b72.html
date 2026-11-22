@@ -821,7 +821,7 @@ const NIV={musique:.239,gong:.906,oiseaux:.12,abeille:.025};   // abeille -50 % 
 //   // gong +3 dB puis +25 % (Julien, 18 nov.)
 //   // cigales baissées de 2 dB ; musique 3 dB sous le gong, pour qu'elle ne le cache pas (au téléphone, le gong n'était plus perçu avec la musique au même niveau)
 // Les cerisiers (Julien, 22 nov.) : les oiseaux dès l'écran « Nous allons mesurer ton souffle » ; la musique à la 1re inspiration
-// (on la prend à 8,5 s : son début est presque muet) ; le vent au 2e cycle ; une abeille au 4e cycle puis tous les 4 cycles ;
+// (on la prend à 8,5 s : son début est presque muet) ; le vent au 2e cycle ; une abeille juste après les oiseaux puis toutes les 45 s ;
 // les oiseaux de nouveau 50 s avant la fin, en entier ; pas de gong ni de notes à la fin.
 const AVEC_MUSIQUE=true,MUS_DE=0,MUS_DUREE=4,MUS_OFF=8.5;
 const LONGS=['musique'];
@@ -938,8 +938,6 @@ function planifier(g,w,k){
   follow(G.wind.gain,w,g.d,(.03+.06*g.a)*v0,(.03+.06*g.b)*v1);
   follow(G.windLp.frequency,w,g.d,280+700*g.a,280+700*g.b);
   follow(G.rustle.gain,w,g.d,(.004+.007*g.a)*v0,(.004+.007*g.b)*v1);
-  // une abeille passe au 4e cycle, puis tous les 4 cycles (8e, 12e…), sauf quand on entend les oiseaux
-  if(k%S.length===0){const c=k/S.length;if(c>=3&&(c-3)%4===0&&!oiseauxEntre(w,w+7))abeille(w)}
 }
 
 function tick(){
@@ -949,6 +947,9 @@ function tick(){
   if(!sess.son||!G||!ctx)return;
   const n=ctx.currentTime,H=n+3,stop=sess.end+12;
   while(sess.next<H&&sess.next<sess.end-1e-6){const g=S[sess.k%S.length];planifier(g,sess.next,sess.k);sess.next+=g.d;sess.k++}
+  // les abeilles (Julien, 22 nov.) : la première juste après les oiseaux du début, puis toutes les 45 s ; jamais pendant les oiseaux
+  if(sess.abeille==null){const fin=Math.max(0,...OIS_PLAGES.map(p=>p[1]));sess.abeille=Math.max(sess.t0+5,fin+2)}
+  while(sess.abeille<H&&sess.abeille<sess.end-6.5){const w=sess.abeille;if(!oiseauxEntre(w,w+7)&&!(sess.total>50&&w+7>sess.t0+sess.total-50))abeille(w);sess.abeille+=45}
   // et 50 s avant la fin, en entier (ils continuent sur l'écran suivant)
   if(!sess.oisFin&&sess.total>50&&n>=sess.t0+sess.total-53){sess.oisFin=true;jouerOiseaux(sess.t0+sess.total-50)}
   // la musique repart de son début au moment où elle entre (3e cycle)
